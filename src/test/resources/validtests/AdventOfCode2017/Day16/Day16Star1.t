@@ -30,7 +30,7 @@ Def IndexOf(programs: Char[], c: Char) =
 Def PrintPrograms(programs: Char[]) =
 	for(val c in programs)
 		print(c)
-	println()
+	println() // res: pkgnhomelfdibjac
 
 val numPrograms = 'q' - 'a'
 val programs = new Char[numPrograms]
@@ -51,4 +51,4 @@ for(val command in input.Split(","))
 		val s = rest.Split("/")
 		Partner(programs, s[0][0], s[1][0])
 
-PrintPrograms(programs) // res: pkgnhomelfdibjac
+PrintPrograms(programs)

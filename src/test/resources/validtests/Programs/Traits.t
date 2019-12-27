@@ -1,6 +1,6 @@
 var a = new A()
 
-a.test() // res: lol
+a.test()
 // Uses D:s version
 println(a.implemented(0)) // res: 3
 
@@ -12,7 +12,7 @@ class A : B, C, D =
 
 class B =
 
-	Def test() = println("lol")
+	Def test() = println("lol") // res: lol
 
 trait C =
 

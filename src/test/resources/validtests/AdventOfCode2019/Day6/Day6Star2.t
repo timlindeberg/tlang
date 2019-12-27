@@ -2324,7 +2324,7 @@ K)L
 K)YOU
 I)SAN`
 
-Def DSF(graph: HashMap<String, Vector<String> >, node: String, distance: Int, visited: HashSet<String>): Int =
+Def DSF(graph: HashMap<String, Vector<String>>, node: String, distance: Int, visited: HashSet<String>): Int =
 	if (node == "SAN")
 		return distance
 

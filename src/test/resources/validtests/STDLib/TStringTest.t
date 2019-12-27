@@ -64,7 +64,6 @@ println(1.0 + s) // res: 1.0String
 println([1, 2, 3] + s) // res: "[1, 2, 3]String"
 println(s + [1, 2, 3]) // res: "String[1, 2, 3]"
 
-
 // TODO: Fix importing nullable arguments
 // val nullable: Int? = null
 //
@@ -252,6 +251,11 @@ println(String.ValueOf([1.0, 2.0, 3.0])) // res: "[1.0, 2.0, 3.0]"
 println(String.ValueOf(["a", "b", "c"])) // res: "[a, b, c]"
 println(String.ValueOf(['a', 'b', 'c'])) // res: "[a, b, c]"
 println(String.ValueOf([new A(), new A(), new A()])) // res: "[ObjectA, ObjectA, ObjectA]"
+
+// TODO:
+// val i: Int? = null
+//
+// println(String.ValueOf(i)) // res: null
 
 class A =
 	Def toString() = "ObjectA"

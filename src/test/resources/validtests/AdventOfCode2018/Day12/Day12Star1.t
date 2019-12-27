@@ -135,7 +135,7 @@ class Day12 =
 			for(val e in changes)
 				e.Key().HasPlant = e.Value()
 
-		println(GetSum())
+		println(GetSum()) // res: 2930
 
 	Def GetSum() =
 		var sum = 0
@@ -161,4 +161,4 @@ class Day12 =
 		println()
 
 
-new Day12(initial, input).Run() // res: 2930
+new Day12(initial, input).Run()

@@ -40,7 +40,7 @@ class Day13 =
 						numSeen++
 			for(var i = 0; i < 2; i++)
 				elves[i] = (elves[i] + 1 + recipes[elves[i]]) % recipes.Size()
-		println(recipes.Size() - recipesToSee.Size())
+		println(recipes.Size() - recipesToSee.Size()) // res: 20185425
 
 
 	def Print() =
@@ -52,4 +52,4 @@ class Day13 =
 
 		println()
 
-new Day13().Run() // res: 20185425
+new Day13().Run()

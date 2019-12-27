@@ -9,14 +9,14 @@ println(i) // res: 1
 		println(i + 1) // res: 11
 	println(i) // res: 7
 println(i) // res: 1
-for(var i: Int = 0; i < 5; i ++) print(i + " ") // res: 0 1 2 3 4
-println("")
+for(var i: Int = 0; i < 5; i ++)
+	println(i) // res: 0, 1, 2, 3, 4
 
 println(i) // res: 1
 
 var j: Int = 1
-for(var i: Int = 0, var j: Int = 0; i + j < 10; i++, j++) print((i + j) + " ") // res: 0 2 4 6 8
-println("")
+for(var i: Int = 0, var j: Int = 0; i + j < 10; i++, j++)
+	println(i + j) // res: 0, 2, 4, 6, 8
 
 println(i) // res: 1
 println(j) // res: 1

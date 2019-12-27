@@ -1,7 +1,7 @@
-println(new H("Construct").run()) // res: Construct
+println(new H("Construct").run()) // res: Run
 
 class H =
 
-	Def new(str: String) = println(str)
+	Def new(str: String) = println(str) // res: Construct
 
-	Def run(): String = return "Run" // res: Run
+	Def run(): String = return "Run"

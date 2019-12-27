@@ -16,26 +16,22 @@ for(var i = 0; i < intArray.Size(); i++)
 	for(var j = 0; j < intArray[0].Size(); j++)
 		for(var k = 0; k < intArray[0][0].Size(); k++)
 			for(var l = 0; l < intArray[0][0][0].Size(); l++)
-				print(intArray[i][j][k][l] + " ") // res: 0 1 2 3 1 2 3 4 2 3 4 5 1 2 3 4 2 3 4 5 3 4 5 6
-println()
+				println(intArray[i][j][k][l]) // res: 0, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6
 
 intArray[0][0][0] = [ 1, 2, 3 ]
 for(var i = 0; i < intArray[0][0][0].Size(); i++)
-	print(intArray[0][0][0][i] + " ") // res: 1 2 3
-println()
+	println(intArray[0][0][0][i]) // res: 1, 2, 3
 
 intArray[0][0] = [ [1, 2], [3, 4] ]
 for(var i = 0; i < intArray[0][0].Size(); i++)
 	for(var j = 0; j < intArray[0][0][0].Size(); j++)
-		print(intArray[0][0][i][j] + " ") // res: 1 2 3 4
-println()
+		println(intArray[0][0][i][j]) // res: 1, 2, 3, 4
 
 val longArray: Long[][] = [[1, 2], [3, 4]]
 longArray[1] = [1, 2]
 for(var i = 0; i < longArray.Size(); i++)
 	for(var j = 0; j < longArray[0].Size(); j++)
-		print(longArray[i][j] + " ") // res: 1 2 1 2
-println()
+		println(longArray[i][j]) // res: 1, 2, 1, 2
 
 intArray = new Int[2][3][4][5]
 println(intArray.Size()) // res: 2

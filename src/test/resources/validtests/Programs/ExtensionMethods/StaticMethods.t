@@ -1,12 +1,12 @@
 val a = new A()
 val b = new A()
 
-a.StaticTest() // res: Static A
-A.StaticTest() // res: Static A
+a.StaticTest()
+A.StaticTest()
 
 extension AExtension : A =
 
-	Def static StaticTest() = println("Static A")
+	Def static StaticTest() = println("Static A") // res: Static A, Static A
 
 class A =
 

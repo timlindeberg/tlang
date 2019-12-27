@@ -45,7 +45,7 @@ class Day11 =
 					maxX = x - 1
 					maxY = y - 1
 
-		println(maxX + "," + maxY)
+		println(maxX + "," + maxY) // res: "233,36"
 
 	Def SquarePower(x: Int, y: Int) =
 		var power = 0
@@ -65,4 +65,4 @@ class Day11 =
 		val s = i.toString()
 		s[s.Size() - 3] - '0'
 
-new Day11().Run() // res: 233,36
+new Day11().Run()

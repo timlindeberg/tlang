@@ -1,6 +1,6 @@
-val i = 1
-Test(i) // res: Int 1
-Test("Hej") // res: String Hej
+Test(1)
+Test(2)
+Test("Hej")
 
 val arr = [ 1, 1L, 1.0, 1.0F, 'c', new A() ]
 
@@ -15,10 +15,10 @@ for(val x in arr)
 Def Test(i: Object) =
 	if(i is Int)
 		val x = i as Int
-		println("Int " + x)
+		println("Int " + x) // res: Int 1, Int 2
 	else if (i is String)
 		val x = i as String
-		println("String " + x)
+		println("String " + x) // res: String Hej
 	else
 		println("Does not happen")
 

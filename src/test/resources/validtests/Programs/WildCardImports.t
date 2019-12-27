@@ -3,7 +3,7 @@ import java::math::*
 
 val a = [ 5, 4, 3, 2, 1 ]
 Arrays.sort(a)
-println(Arrays.toString(a)) // res: [1, 2, 3, 4, 5]
+println(Arrays.toString(a)) // res: "[1, 2, 3, 4, 5]"
 
 val bitSet = new BitSet(10)
 println(bitSet.size()) // res: 64

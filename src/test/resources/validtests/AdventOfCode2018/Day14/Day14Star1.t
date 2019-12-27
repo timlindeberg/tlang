@@ -33,7 +33,7 @@ class Day13 =
 				elves[i] = (elves[i] + 1 + recipes[elves[i]]) % recipes.Size()
 		for(val recipe in lastRecipes)
 			print(recipe)
-		println()
+		println() // res: 1044257397
 
 	def Print() =
 		for(var i = 0; i < recipes.Size(); i++)
@@ -44,4 +44,4 @@ class Day13 =
 
 		println()
 
-new Day13().Run() // res: 1044257397
+new Day13().Run()

@@ -1,5 +1,3 @@
-// Res: C
-// Res: Base2
 new C().Print()
 
 trait Base1 =
@@ -16,9 +14,9 @@ trait B : Base1 =
 		super.Print()
 
 class Base2 =
-	Def Print() = println("Base2")
+	Def Print() = println("Base2") // Res: Base2
 
 class C : Base2, A, B =
 	Def Print() =
-		println("C")
+		println("C") // Res: C
 		super.Print()

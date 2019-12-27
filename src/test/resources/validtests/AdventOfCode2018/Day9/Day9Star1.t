@@ -52,7 +52,7 @@ class Day9 =
 		var max = 0
 		for(val v in scores)
 			max = Math.max(max, v)
-		println(max)
+		println(max) // res: 439635
 
 	Def Print(current: Node) =
 		print(start.Value + " ")
@@ -64,4 +64,4 @@ class Day9 =
 			n = n!!.Next
 		println()
 
-new Day9().Run() // res: 439635
+new Day9().Run()

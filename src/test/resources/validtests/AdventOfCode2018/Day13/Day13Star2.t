@@ -254,7 +254,7 @@ class Day13 =
 		while(true)
 			RemoveCrashedCarts()
 			if(carts.Size() == 1)
-				println(carts[0].X + "," + carts[0].Y)
+				println(carts[0].X + "," + carts[0].Y) // res: "16,73"
 				return
 
 			carts.Sort(new CartComparator())
@@ -346,4 +346,4 @@ class Day13 =
 					cart.Direction = Up
 			cart.State = (cart.State + 1) % 3
 
-new Day13(input).Run() // res: 16,73
+new Day13(input).Run()

@@ -1,6 +1,6 @@
 val x = 5
 println(5 + new A()) // res: 10
-x[3] = 2 // res: Int setter
+x[3] = 2
 println(Int.GetValue()) // res: 1
 println(x.subtract(5)) // res: 0
 println(5.subtract(10)) // res: -5
@@ -13,7 +13,7 @@ extension IntExtensions : T::lang::Int =
 
 	Def +(a: Int, rhs: A): Int = a + rhs.i
 
-	Def []=(index: Int, value: Int): Unit = println("Int setter")
+	Def []=(index: Int, value: Int): Unit = println("Int setter") // res: Int setter
 
 
 class A =

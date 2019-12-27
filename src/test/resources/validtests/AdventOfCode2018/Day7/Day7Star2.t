@@ -171,7 +171,7 @@ class Day7 =
 
 			time++
 
-		println(time - 1)
+		println(time - 1) // res: 914
 
 	Def GetFreeWorker(): Worker? =
 		for(val worker in workers)
@@ -217,4 +217,4 @@ class Day7 =
 			p.Add(from)
 			parents.GetOrDefault(from, new Vector<Char>())
 
-new Day7(input).Run() // res: 914
+new Day7(input).Run()

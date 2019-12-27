@@ -7,19 +7,17 @@ var i = 10
 
 impl = i
 println(impl) // res: 10
-PrintImplicit(10) // res: 10
-PrintImplicit(GetInt()) // res: 5
+PrintImplicit(10)
+PrintImplicit(GetInt())
 
 var implArray: Implicit[] = [ 1, 2, 3 ]
 
 implArray[1] = 5
 
 for(var i = 0; i < 3; i++)
-	print(implArray[i].GetValue() + " ") // res: 1 5 3
-println("")
+	println(implArray[i].GetValue()) // res: 1, 5, 3
 
-
-PrintImplicitArray([ 1, 2, 3 ]) // res: 1 2 3
+PrintImplicitArray([ 1, 2, 3 ])
 
 impl = 10 as Implicit
 println(impl) // res: 10
@@ -29,17 +27,16 @@ var arr = [ 1, 2, 3 ]
 
 var implArr: ImplicitArr = arr
 
-println(implArr) // res: 1 2 3
+println(implArr) // res: "1 2 3 "
 
 println(new A().impl) //res: 5
 println(A.staticImpl) //res: 10
 
 Def GetInt() = return 5
-Def PrintImplicit(impl: Implicit): Unit = println(impl)
+Def PrintImplicit(impl: Implicit): Unit = println(impl) // res: 10, 5
 Def PrintImplicitArray(implArray: Implicit[]) =
 	for(var i = 0; i < implArray.Size(); i++)
-		print(implArray[i] + " ")
-	println("")
+		println(implArray[i]) // res: 1, 2, 3
 
 class Implicit =
 

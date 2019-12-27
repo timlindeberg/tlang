@@ -256,7 +256,7 @@ class Day13 =
 				MoveCart(cart)
 				for(val cart2 in carts)
 					if(cart != cart2 && cart.X == cart2.X && cart.Y == cart2.Y)
-						println(cart.X + "," + cart.Y)
+						println(cart.X + "," + cart.Y) // res: "111,13"
 						return
 
 	Def MoveCart(cart: Cart) =
@@ -329,4 +329,4 @@ class Day13 =
 					cart.Direction = Up
 			cart.State = (cart.State + 1) % 3
 
-new Day13(input).Run() // res: 111,13
+new Day13(input).Run()

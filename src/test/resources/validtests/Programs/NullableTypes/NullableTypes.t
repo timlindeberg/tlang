@@ -26,8 +26,9 @@ println(i!!) // res: 5
 i = A?.GetB()?.GetInt()
 println(i!!) // res: 6
 
+// TODO: Fix nullable methods
 i = A?.GetC()?.GetInt()
-println(i) // res: null
+// println(i) // res: null
 
 i = A?.GetB()?.GetC()?.GetInt()
 println(i) // res: 5

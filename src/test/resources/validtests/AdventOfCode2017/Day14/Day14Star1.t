@@ -86,4 +86,4 @@ for(var i = 0; i < 128; i++)
 		for(var k = 0; k < 4; k++)
 			if(x[k] == 1) count++
 
-println("Count: " + count) // Res: Count: 8140
+println(count) // Res: 8140

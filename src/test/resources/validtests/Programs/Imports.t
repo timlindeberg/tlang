@@ -2,11 +2,10 @@ import java::util::Locale
 import java::util::Random
 import java::lang::System
 
-// TODO: This test only works in CET on a computer with english Locale :)
 
-new A().AD() // res: 1
-new A().BC() // res: 0
-new A().TimeZone() // res: Central European Time
+new A().AD()
+new A().BC()
+new A().TimeZone()
 
 val locale = new Locale("sv", "SE")
 println(locale.getDisplayLanguage()) // res: Swedish
@@ -22,7 +21,8 @@ println(1 + java::lang::Math.PI + 1) // res: 5.141592653589793
 
 class A : java::util::GregorianCalendar =
 
-	Def AD() = println(AD)
-	Def BC() = println(BC)
+	Def AD() = println(AD) // res: 1
+	Def BC() = println(BC) // res: 0
 
-	Def TimeZone() = println(getTimeZone().getDisplayName())
+	// TODO: This test only works in CET on a computer with english Locale :)
+	Def TimeZone() = println(getTimeZone().getDisplayName()) // res: Central European Time

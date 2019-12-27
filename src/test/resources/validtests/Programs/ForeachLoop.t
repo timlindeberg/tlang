@@ -1,23 +1,19 @@
 val C = new Container()
 
 for(val v in C)
-	print(v) // res: AAAAAAAAAA
-println()
+	println(v) // res: A, A, A, A, A, A, A, A, A, A
 
 for(val v: Int in [ 1, 2, 3, 4, 5 ])
-	print(v) // res: 12345
-println()
+	println(v) // res: 1, 2, 3, 4, 5
 
 
 val arr: Int[] = [ 1, 2, 3, 4, 5 ]
 
 for(var v in arr)
-	print(++v) // res: 23456
-println()
+	println(++v) // res: 2, 3, 4, 5, 6
 
 for(val v in arr)
-	print(v) // res: 12345
-println()
+	println(v) // res: 1, 2, 3, 4, 5
 
 class A =
 

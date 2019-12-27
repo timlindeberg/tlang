@@ -15,19 +15,17 @@ for(var i = 0; i < 5; i++)
 	a[i]    = new A(i)
 
 for(var i = 0; i < 5; i++)
-	print(int[i] + " ") // res: 0 1 2 3 4
-println("")
+	println(int[i]) // res: 0, 1, 2, 3, 4
 
 for(var i = 0; i < 5; i++)
-	print(str[i] + " ") // res: 0 1 2 3 4
-println("")
+	println(str[i]) // res: 0, 1, 2, 3, 4
 
 for(var i = 0; i < 5; i++)
-	print(bool[i] + " ") // res: true false true false true
-println("")
+	println(bool[i]) // res: true, false, true, false, true
 
 for(var i = 0; i < 5; i++)
-	print(a[i] + " ")    // res: 0 1 2 3 4
+	println(a[i])    // res: 0, 1, 2, 3, 4
+
 
 class A =
 

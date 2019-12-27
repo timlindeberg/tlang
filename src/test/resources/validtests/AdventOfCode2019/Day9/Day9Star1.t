@@ -61,7 +61,7 @@ class Day5 =
 				pc += 2
 			if (opCode == 4)
 				val params = GetParameters(pc, parameterModes, 1)
-				println(params[0].Get())
+				println(params[0].Get()) // res: 3235019597
 				pc += 2
 			if (opCode == 5)
 				val params = GetParameters(pc, parameterModes, 2)
@@ -105,4 +105,4 @@ class Day5 =
 
 		return params
 
-new Day5().Run(input) // res: 3235019597
+new Day5().Run(input)

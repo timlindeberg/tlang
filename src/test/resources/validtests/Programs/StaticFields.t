@@ -1,4 +1,4 @@
-var a1: A = new A() // res: Init
+var a1: A = new A()
 var a2: A = new A()
 var a3: A = new A()
 
@@ -14,5 +14,5 @@ class A =
 	Var static k: Int = test()
 
 	def static test(): Int =
-		println("Init")
+		println("Init")  // res: Init
 		return 5

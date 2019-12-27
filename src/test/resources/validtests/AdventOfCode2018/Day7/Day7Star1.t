@@ -145,7 +145,7 @@ class Day7 =
 					queue.Add(e)
 			queue.Sort(new CharDescending())
 
-		println()
+		println() // res: CQSWKZFJONPBEUMXADLYIGVRHT
 
 	Def Visited(node: Char) = visited[node - 'A']
 
@@ -177,4 +177,4 @@ class Day7 =
 			p.Add(from)
 			parents.GetOrDefault(from, new Vector<Char>())
 
-new Day7(input).Run() // res: CQSWKZFJONPBEUMXADLYIGVRHT
+new Day7(input).Run()
