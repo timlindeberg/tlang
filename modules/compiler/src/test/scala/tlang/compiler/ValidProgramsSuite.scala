@@ -4,6 +4,7 @@ package compiler
 import better.files.File
 import org.scalatest.ParallelTestExecution
 import tlang.compiler.execution.Compiler
+import tlang.filetester.CompilerFileTester
 import tlang.testutils.TestConstants._
 import tlang.utils.Logging
 
@@ -13,12 +14,5 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
 
   testFiles(s"$Resources/validtests", testValidProgram)
 
-  private def testValidProgram(file: File): Unit = {
-    val ctx = testContext(Some(file))
-    val fileTester = CompilerFileTester(file, ctx, Compiler.FrontEnd)
-    val result = fileTester.execute()
-    if (!result.success) {
-      fail(result.message)
-    }
-  }
+  private def testValidProgram(file: File): Unit = testFile(Compiler.FrontEnd, file)
 }

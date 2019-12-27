@@ -25,14 +25,9 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
   testFileForErrors(s"$ErrorResources/Typing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing)
   testFileForErrors(s"$ErrorResources/Flowing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing)
 
-  private def testFileForErrors[T](path: String, pipeLine: CompilerPhase[Source, T]): Unit = testFiles(path, testFileForErrors(pipeLine, _))
+  private def testFileForErrors[T](path: String, pipeline: CompilerPhase[Source, T]): Unit = testFiles(path, testFileForErrors(pipeline, _))
 
-  private def testFileForErrors[T](pipeLine: CompilerPhase[Source, T], file: File): Unit = {
-    val ctx = testContext(Some(file))
-    val fileTester = CompilerFileTester(file, ctx, pipeLine)
-    val result = fileTester.execute()
-    if (!result.success) {
-      fail(result.message)
-    }
+  private def testFileForErrors[T](pipeline: CompilerPhase[Source, T], file: File): Unit = {
+    testFile(pipeline, file)
   }
 }
