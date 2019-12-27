@@ -15,29 +15,15 @@ trait TypingErrors extends ErrorHandling {
     TError
   }
 
+  import errorStringContext._
+
+  private val ErrorLetters = "T"
+  abstract class TypeCheckingError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
+  abstract class TypeCheckingWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
+
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
-
-  import errorStringContext._
-
-  private def containsErrorType(product: Product): Boolean =
-    product.productIterator.exists {
-      case s: String                                                             => s == CompilerMessage.ErrorName
-      case t: Type                                                               => t == TError
-      case list: Traversable[_] if list.nonEmpty && list.head.isInstanceOf[Type] =>
-        list.asInstanceOf[Traversable[Type]].exists(_ == TError)
-      case _                                                                     => false
-    }
-
-  private val ErrorLetters = "T"
-  abstract class TypeCheckingError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos) {
-    override def isValid: Boolean = !containsErrorType(this)
-  }
-
-  abstract class TypeCheckingWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos) {
-    override def isValid: Boolean = !containsErrorType(this)
-  }
 
   object WrongType {
     def apply(expected: Type, found: Type, pos: Positioned): WrongType = WrongType(err"$expected", err"$found", pos)

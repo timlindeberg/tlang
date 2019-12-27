@@ -21,21 +21,9 @@ trait NamingErrors extends ErrorHandling {
 
   import errorStringContext._
 
-  private def _isValid(productIterator: Iterator[Any]): Boolean =
-    !productIterator.exists {
-      case s: Symbolic[_] if s.hasSymbol =>
-        val sym = s.getSymbol
-        sym == ClassErrorSymbol || sym == VariableErrorSymbol
-      case _                             => false
-    }
-
-  val ErrorLetters = "N"
-  abstract class NameAnalysisError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos) with Product {
-    override def isValid: Boolean = _isValid(productIterator)
-  }
-  abstract class NameAnalysisWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos) with Product {
-    override def isValid: Boolean = _isValid(productIterator)
-  }
+  private val ErrorLetters = "N"
+  abstract class NameAnalysisError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
+  abstract class NameAnalysisWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

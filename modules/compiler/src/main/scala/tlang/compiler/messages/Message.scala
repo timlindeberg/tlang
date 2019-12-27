@@ -21,7 +21,7 @@ abstract class CompilerMessage(
 
   def message: String
 
-  def isValid = true
+  def isValid: Boolean = !message.contains(CompilerMessage.ErrorName)
 
   def notes: List[CompilerMessage] = Nil
 
