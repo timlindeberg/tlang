@@ -25,7 +25,7 @@ class Matrix<T> =
 		if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
 			errorInvalidDimensions(lhs, rhs)
 
-		var m = new Matrix<T>(lhs.columns, lhs.rows)
+		val m = new Matrix<T>(lhs.columns, lhs.rows)
 		for(var i = 0; i < m.columns; i++)
 			for(var j = 0; j < m.rows; j++)
 				m[i][j] = lhs[i][j] + rhs[i][j]
@@ -36,7 +36,7 @@ class Matrix<T> =
 		if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
 			errorInvalidDimensions(lhs, rhs)
 
-		var m = new Matrix<T>(lhs.columns, lhs.rows)
+		val m = new Matrix<T>(lhs.columns, lhs.rows)
 		for(var i = 0; i < m.columns; i++)
 			for(var j = 0; j < m.rows; j++)
 				m[i][j] = lhs[i][j] - rhs[i][j]
@@ -45,7 +45,7 @@ class Matrix<T> =
 
 	Def *(matrix: Matrix<T>, scalar: T) = scalar * matrix
 	Def *(scalar: T, matrix: Matrix<T>) =
-		var m = new Matrix<T>(matrix.columns, matrix.rows)
+		val m = new Matrix<T>(matrix.columns, matrix.rows)
 		for(var i = 0; i < m.columns; i++)
 			for(var j = 0; j < m.rows; j++)
 				m[i][j] = scalar * matrix[i][j]
@@ -56,7 +56,7 @@ class Matrix<T> =
 		if(lhs.columns != rhs.rows)
 			errorInvalidDimensions(lhs, rhs)
 
-		var m = new Matrix<T>(lhs.rows, lhs.columns)
+		val m = new Matrix<T>(lhs.rows, lhs.columns)
 		for(var i = 0; i < m.columns; i++)
 			for(var j = 0; j < m.rows; j++)
 				for(var k = 0; k < lhs.columns; k++)
@@ -75,7 +75,7 @@ class Matrix<T> =
 		res
 
 	Def Transpose(): Matrix<T> =
-		var m = new Matrix<T>(columns, rows)
+		val m = new Matrix<T>(columns, rows)
 		for(var i = 0; i < columns; i++)
 			for(var j = 0; j < rows; j++)
 				m[i][j] = data[j][i]

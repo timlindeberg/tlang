@@ -6,5 +6,6 @@ trait Iterable<T> =
 
 	/**
 	* Returns an iterator over this iterable instance.
+	* @return an iterator over this iterable instance.
 	*/
 	Def Iterator(): Iterator<T>

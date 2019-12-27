@@ -24,7 +24,7 @@ trait Collection<T>: Iterable<T> =
 	/**
 	* Removes the given element from this collection.
 	* @param value the element to remove
-	* @return	  true if the element was removed; false otherwise
+	* @return      true if the element was removed; false otherwise
 	*/
 	Def Remove(value: T): Bool
 
@@ -52,7 +52,7 @@ trait Collection<T>: Iterable<T> =
 
 	/**
 	* Adds all the elements in the given collection to this collection.
-	* @param list the collection of elements to add
+	* @param elements the collection of elements to add
 	*/
 	Def AddAll(elements: Collection<T>): Unit =
 		for(val e in elements)
@@ -60,7 +60,7 @@ trait Collection<T>: Iterable<T> =
 
 	/**
 	* Adds all the elements in the given collection to this collection.
-	* @param list the collection of elements to add
+	* @param elements the collection of elements to add
 	*/
 	Def RemoveAll(elements: Collection<T>): Unit =
 		for(val e in elements)
@@ -69,8 +69,8 @@ trait Collection<T>: Iterable<T> =
 	/**
 	* Returns true if the collection contains all of the given element.
 	* @param elements the collection of elements to check
-	* @return		 true if the collection contains all of the given element;
-					 false otherwise
+	* @return         true if the collection contains all of the given element;
+    *                 false otherwise
 	*/
 	Def ContainsAll(elements: Collection<T>): Bool =
 		for(val e in elements)
@@ -93,15 +93,15 @@ trait Collection<T>: Iterable<T> =
 
 	/**
 	* Constructs a string representation of this collection using the given
-	* delimiter to seperate the elements.
+	* delimiter to separate the elements.
 	*
 	* Example:
 	* val c: Collection<Int> = {1, 2, 3}
 	* c.MakeString("<->") // res: "1 <-> 2 <-> 3"
 	*
 	* @param delimiter a string to use to delimite the elements
-	* @return		  a string representation of this collection using the
-	*				  given delimiter to seperate the elements
+	* @return          a string representation of this collection using the
+	*                  given delimiter to seperate the elements
 	*/
 	Def MakeString(delimiter: String): String =
 		var s = ""
@@ -119,7 +119,7 @@ trait Collection<T>: Iterable<T> =
 	* A collection, containing the the elements 1, 2 and 3 yields:
 	* [ 1, 2, 3 ]
 	*
-	* @return		  a string representation of this collection
+	* @return a string representation of this collection
 	*/
 	Def toString(): String = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
 
@@ -132,9 +132,9 @@ trait Collection<T>: Iterable<T> =
 	* and each element of 'lhs' is contained within 'rhs' and each element
 	* of 'rhs' contained in 'lhs'.
 	*
-	* @param lhs the lefthand side of the comparison
-	* @param rhs the righthand side of the comparison
-	* @return	true if the collections are equal; false otherwise
+	* @param lhs the left hand side of the comparison
+	* @param rhs the right hand side of the comparison
+	* @return    true if the collections are equal; false otherwise
 	*/
 	Def ==(lhs: Collection<T>, rhs: Collection<T>): Bool =
 		if(lhs.Size() != rhs.Size())
@@ -145,16 +145,16 @@ trait Collection<T>: Iterable<T> =
 	/**
 	* Returns true if the collections contain a different amount of elements
 	* or any element of the collections are not equal.
-	* @param lhs the lefthand side of the comparison
-	* @param rhs the righthand side of the comparison
-	* @return	true if the collections are not equal; false otherwise
+	* @param lhs the left hand side of the comparison
+	* @param rhs the right hand side of the comparison
+	* @return    true if the collections are not equal; false otherwise
 	*/
 	Def !=(lhs: Collection<T>, rhs: Collection<T>): Bool = !(lhs == rhs)
 
 	/**
 	* Returns a hashcode for the given collection.
 	* @param elements the collections to calculate a hashcode for
-	* @return		 a hashcode for the given collection
+	* @return         a hashcode for the given collection
 	*/
 	Def #(elements: Collection<T>): Int =
 		var hashCode = 1

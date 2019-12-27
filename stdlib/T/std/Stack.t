@@ -3,7 +3,7 @@ package T::std
 import T::std::Collection
 
 /**
-* An unlimited size queue that supports the operations Enqueue and Dequeue.
+* An unlimited size stack that supports the operations Enqueue and Dequeue.
 */
 trait Stack<T>: Collection<T> =
 

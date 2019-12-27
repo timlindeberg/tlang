@@ -2,7 +2,7 @@ package T::lang
 
 class CharRef =
 
-	var v: Char
+	val v: Char
 
 	Def static ValueOf(v: Char): CharRef = new CharRef(v)
 	Def Value(): Char = v
