@@ -43,7 +43,7 @@
       ]
     },
     "keyword": {
-      "match": "\\b(extension|protected|implicit|continue|package|import|object|static|return|class|trait|while|super|error|break|else|this|Def|def|Var|Val|var|val|for|new|is|as|if|in)\\b",
+      "match": "\\b(extension|protected|implicit|continue|package|import|static|return|class|trait|while|super|error|break|else|this|Def|def|Var|Val|var|val|for|new|is|as|if|in)\\b",
       "name": "keyword.tlang"
     },
     "indentBlock": {
