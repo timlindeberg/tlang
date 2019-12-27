@@ -753,6 +753,13 @@ object Trees {
   type TreeTransformation = PartialFunction[Tree, Tree]
   type TreeTraversal = PartialFunction[Tree, Unit]
 
+  def transform(tree: Tree)(transformationFunction: TreeTransformation): Tree = {
+    val transformer = new Transformer {
+      override val transformation: TreeTransformation = transformationFunction
+    }
+    transformer(tree)
+  }
+
   trait Transformer {
 
     val copier: Copier = new LazyCopier()
