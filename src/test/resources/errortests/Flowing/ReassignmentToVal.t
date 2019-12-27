@@ -32,8 +32,25 @@ class A =
 
 		B.F = 2 // res: F2005
 
+		val c = new C()
+		c[5].A = new A() // res: F2005
+		c[GetValue()].A = new A() // res: F2005
+		c[5].A.F++ // res: F2005
+		c[5].A.F = 25 // res: F2005
+		c[GetValue()].A.F = 25 // res: F2005
+		c[GetValue()].A.F++ // res: F2005
+
+	Def GetValue() = 25
+
 class B =
 	Val static F = 1
 
 	Def ++(b: B) = new B()
 	Def --(b: B) = new B()
+
+class C =
+
+	Def [](index: Int) = new D()
+
+class D =
+	Val A = new A()

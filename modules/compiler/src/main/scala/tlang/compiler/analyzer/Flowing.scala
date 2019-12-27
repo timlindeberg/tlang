@@ -3,7 +3,7 @@ package compiler
 package analyzer
 
 import tlang.compiler.analyzer.Knowledge.{Identifier, _}
-import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol}
+import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
@@ -286,10 +286,16 @@ case class MethodFlowAnalyzer(
             case _ => analyzeExpr(obj, knowledge)
           }
 
-          knowledge.getIdentifier(obj) ifDefined { varId =>
-            // Reset knowledge
-            checkReassignment(varId, knowledge, assign)
-            knowledge = knowledge.assignment(varId, Some(from), Reassigned(assign))
+          knowledge.getIdentifier(obj) match {
+            case Some(varId) =>
+              // Reset knowledge
+              checkReassignment(varId, knowledge, assign)
+              knowledge = knowledge.assignment(varId, Some(from), Reassigned(assign))
+            case None        =>
+              getField(obj) match {
+                case Some(field) => checkReassignment(field, knowledge, isMaybeInitialized = true, assign)
+                case None        =>
+              }
           }
         case binOp@BinaryOperatorTree(lhs, rhs) =>
           traverse(lhs)
@@ -321,10 +327,16 @@ case class MethodFlowAnalyzer(
                 checkValidUse(expr, knowledge)
 
               op.ifInstanceOf[IncrementDecrementTree] { incDec =>
-                knowledge.getIdentifier(expr) ifDefined { varId =>
-                  checkReassignment(varId, knowledge, op)
-                  val v = if (incDec.isIncrement) 1 else -1
-                  knowledge = knowledge.addToNumericValue(varId, v)
+                knowledge.getIdentifier(expr) match {
+                  case Some(varId) =>
+                    checkReassignment(varId, knowledge, op)
+                    val v = if (incDec.isIncrement) 1 else -1
+                    knowledge = knowledge.addToNumericValue(varId, v)
+                  case None        =>
+                    getField(incDec.expr) match {
+                      case Some(field) => checkReassignment(field, knowledge, isMaybeInitialized = true, op)
+                      case None        =>
+                    }
                 }
               }
           }
@@ -356,6 +368,13 @@ case class MethodFlowAnalyzer(
     knowledge
   }
 
+  @scala.annotation.tailrec
+  private def getField(expr: ExprTree): Option[FieldSymbol] = expr match {
+    case v: VariableID if v.getSymbol.isInstanceOf[FieldSymbol] => Some(v.getSymbol.asInstanceOf[FieldSymbol])
+    case Access(_, application)                                 => getField(application)
+    case _                                                      => None
+  }
+
   private def analyzeComparison(comparison: BinaryOperatorTree, knowledge: Knowledge): Knowledge = {
     val lhs = comparison.lhs
     val rhs = comparison.rhs
@@ -375,18 +394,23 @@ case class MethodFlowAnalyzer(
     knowledge
   }
 
-  private def checkReassignment(varId: Identifier, knowledge: Knowledge, pos: Positioned): Unit =
+  private def checkReassignment(varId: Identifier, knowledge: Knowledge, pos: Positioned): Unit = {
     varId.symbol ifDefined { sym =>
-      if (!sym.isFinal) {
-        return
-      }
-
-      // We can only assign vals inside constructors
-      val isConstructor = methodDeclTree.isInstanceOf[ConstructorDecl]
-      if (!isConstructor || knowledge.isMaybe[Initialized](varId)) {
-        report(ReassignmentToVal(sym.name, pos))
-      }
+      checkReassignment(sym, knowledge, knowledge.isMaybe[Initialized](varId), pos)
     }
+  }
+
+  private def checkReassignment(sym: VariableSymbol, knowledge: Knowledge, isMaybeInitialized: Boolean, pos: Positioned): Unit = {
+    if (!sym.isFinal) {
+      return
+    }
+
+    // We can only assign vals inside constructors
+    val isConstructor = methodDeclTree.isInstanceOf[ConstructorDecl]
+    if (!isConstructor || isMaybeInitialized) {
+      report(ReassignmentToVal(sym.name, pos))
+    }
+  }
 
   private def getBoolVarCondition(obj: ExprTree, knowledge: Knowledge) =
     knowledge.getIdentifier(obj) flatMap { id => knowledge.get[BoolValue](id).map(_.condition) }
