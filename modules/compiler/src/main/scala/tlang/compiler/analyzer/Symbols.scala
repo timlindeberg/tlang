@@ -209,8 +209,8 @@ object Symbols {
   class MethodSymbol(
     val name: String,
     val classSymbol: ClassSymbol,
-    val stat: Option[StatTree],
-    val modifiers: Set[Modifier]) extends Symbol with Modifiable {
+    val stat: Option[StatTree] = None,
+    val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable {
 
     var isAbstract: Boolean = stat.isEmpty
     var args: Map[String, VariableSymbol] = Map[String, VariableSymbol]()

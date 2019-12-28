@@ -9,6 +9,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
+import tlang.utils.{NoPosition, Position, UninitializedPosition}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -26,6 +27,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
 
   private var symbolId = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
+  private var maxPositionSize: Int = 0
 
   def apply(t: Tree): List[TreePrinterRow] = {
     val Indent = List.fill(spacing)(' ')
@@ -34,6 +36,9 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
 
     symbolId = 0
     symbolMap = new java.util.IdentityHashMap[Symbol, (Int, Color)].asScala
+    t.foreach { tree =>
+      maxPositionSize = math.max(maxPositionSize, maxWidth(tree.getPos))
+    }
 
     var first = true
     val lines: ListBuffer[TreePrinterRow] = ListBuffer()
@@ -41,7 +46,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
 
     def printTree(tree: Tree, stack: List[Char]): Unit = {
       def addLine(): Unit = {
-        val line = (Magenta(tree.line), sb.toString, reference(tree), symbolContent(tree), typeContent(tree))
+        val line = (sb.toString, reference(tree), symbolContent(tree), typeContent(tree), positionContent(tree))
         lines += line
         sb.clear()
       }
@@ -108,7 +113,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
         .replaceAll("\\$ERROR", "Error")
 
       color(s)
-    case _: Typed                                  => Red(Bold(Cross))
+    case _: Typed                                  => missing
     case _                                         => ""
   }
 
@@ -122,8 +127,19 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
       }
       val symbolLetter = getSymbolLetter(symbol)
       fullColor(symbolLetter + id)
-    case _: Symbolic[_]                              => Red(Bold(Cross))
+    case _: Symbolic[_]                              => missing
     case _                                           => ""
+  }
+
+  private def positionContent(tree: Tree): String = {
+    tree.getPos match {
+      case UninitializedPosition                => missing
+      case NoPosition                           => Green("-")
+      case Position(line, col, lineEnd, colEnd) =>
+        def format(color: Color, i: Int): String = color(i.toString.padTo(maxPositionSize, ' '))
+
+        s"${ format(Blue, line) } ${ format(Magenta, col) } ${ format(Blue, lineEnd) } ${ format(Magenta, colEnd) }"
+    }
   }
 
   private def typeColor(tpe: Type): Color = tpe match {
@@ -153,5 +169,13 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
     val colorIndex = id % FGColors.length
     symbolId += 1
     (id, FGColors(colorIndex))
+  }
+
+  private def missing = Red(Bold(Cross))
+
+  private def maxWidth(pos: Position) = {
+    List(pos.line, pos.col, pos.lineEnd, pos.colEnd)
+      .map { _.digits }
+      .max
   }
 }

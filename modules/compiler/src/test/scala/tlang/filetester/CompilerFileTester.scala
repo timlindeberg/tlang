@@ -157,14 +157,13 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
   }
 
   private def verifyTree(cu: CompilationUnit): Unit = {
-    def failMissing(tree: Tree, missing: String) = {
+    def invalidTree(tree: Tree, missing: String) = {
       val treePrinter = new TreePrinter
       val treeRepr = ScalaRunTime._toString(tree)
 
       val debugTree = formatter.grid
-        .header(s"Tree $treeRepr has a missing $missing")
-        .row(Column, TruncatedColumn, Column, Column, TruncatedColumn)
-        .columnHeaders("Line", "Tree", "Reference", "Symbol", "Type")
+        .row(TruncatedColumn, Column, Column, Column, Column)
+        .columnHeaders("Tree", "Reference", "Symbol", "Type", "Position")
         .contents(treePrinter(cu))
         .render()
 
@@ -173,15 +172,15 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
 
     cu foreach { tree: Tree =>
       tree match {
-        case s: Symbolic[_] if !s.hasSymbol => failMissing(tree, "symbol")
+        case s: Symbolic[_] if !s.hasSymbol => invalidTree(tree, "symbol")
         case _                              =>
       }
       tree match {
-        case t: Typed if !t.hasType => failMissing(tree, "type")
+        case t: Typed if !t.hasType => invalidTree(tree, "type")
         case _                      =>
       }
       if (tree.getPos == UninitializedPosition) {
-        failMissing(tree, "position")
+        invalidTree(tree, "position")
       }
     }
   }

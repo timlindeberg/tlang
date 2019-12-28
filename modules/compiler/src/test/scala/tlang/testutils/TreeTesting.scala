@@ -13,7 +13,7 @@ import scala.util.Random
 trait TreeTesting extends MockitoSugar {
 
   implicit class PositionedTest[T <: Positioned](pos: T) {
-    def setRandomPos: T = pos.setPos(randomPosition)
+    def setRandomPos(): T = pos.setPos(randomPosition)
   }
 
   val IntType = ClassID(Types.Int.name)

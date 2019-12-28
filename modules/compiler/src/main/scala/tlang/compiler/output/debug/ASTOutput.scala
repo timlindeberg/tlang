@@ -37,8 +37,8 @@ case class ASTOutput(
         .content(tree.sourceDescription)
         .row()
         .content(replaceTabs(prettyPrinter(tree)).trimWhiteSpaces)
-        .row(Column, TruncatedColumn, Column, Column, TruncatedColumn)
-        .columnHeaders("Line", "Tree", "Reference", "Symbol", "Type")
+        .row(TruncatedColumn, Column, Column, Column, Column)
+        .columnHeaders("Tree", "Reference", "Symbol", "Type", "Position")
         .contents(treePrinter(tree))
     }
     grid.render()
