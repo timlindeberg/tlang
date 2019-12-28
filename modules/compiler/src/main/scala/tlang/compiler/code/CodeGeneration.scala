@@ -58,7 +58,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
     initializeStaticFields(classDecl, classFile)
 
-    if (!classDecl.methods.exists(_.isInstanceOf[ConstructorDecl]))
+    if (!classDecl.methods.existsInstance[ConstructorDecl])
       generateDefaultConstructor(classFile, classDecl)
 
     val stackTraces = generateMethods(ctx, classDecl, classFile)
@@ -80,7 +80,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
       val methodHandle = methodDecl match {
         case _: MethodDecl =>
-          val argTypes = methSymbol.argTypes.map(_.byteCodeName).mkString
+          val argTypes = methSymbol.argTypes.map { _.byteCodeName }
           val methDescriptor = methodDescriptor(methSymbol)
           classFile.addMethod(
             methSymbol.getType.byteCodeName,
@@ -92,6 +92,11 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
         case con: ConstructorDecl => generateConstructor(Some(con), classFile, classDecl)
         case _                    => ???
+      }
+
+      methodDecl.args.zipWithIndex.foreach { case (arg, index) =>
+        if (index % 2 == 0)
+          methodHandle.addParameterAnnotation(index, s"LABC$index;")
       }
       val flags = getMethodFlags(methodDecl)
       methodHandle.setFlags(flags)
@@ -155,7 +160,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   }
 
   private def generateBridgeMethod(classFile: ClassFile, overriden: MethodSymbol, meth: MethodSymbol, flags: U2, base: ExprTree) = {
-    val argTypes = overriden.argTypes.map(_.byteCodeName).mkString
+    val argTypes = overriden.argTypes.map(_.byteCodeName)
     val retType = overriden.getType.byteCodeName
 
     val descriptor = methodDescriptor(overriden)
@@ -275,11 +280,11 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   private def generateConstructor(con: Option[ConstructorDecl], classFile: ClassFile, classDecl: ClassDeclTree): MethodHandler = {
     val mh = con match {
       case Some(conDecl) =>
-        val argTypes = conDecl.getSymbol.argTypes.map(_.byteCodeName).mkString
+        val argTypes = conDecl.getSymbol.argTypes.map(_.byteCodeName)
         val methDescriptor = methodDescriptor(conDecl.getSymbol)
         classFile.addConstructor(argTypes, methDescriptor)
       case _             =>
-        classFile.addConstructor("", "new()")
+        classFile.addConstructor(Nil, "new()")
     }
 
     addSuperCall(mh, classDecl)

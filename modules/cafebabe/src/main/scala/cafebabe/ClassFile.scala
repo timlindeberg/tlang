@@ -16,7 +16,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   private val constantPool = new ConstantPool()
   private lazy val codeNameIndex: U2 = constantPool.addString("Code")
   private lazy val runtimeVisibleAnnotationsIndex: U2 = constantPool.addString("RuntimeVisibleAnnotations")
-  private lazy val runtimeInvisibleAnnotationsIndex: U2 = constantPool.addString("RuntimeInvisibleAnnotations")
+  private lazy val runtimeInvisibleAnnotationsIndex: U2 = constantPool.addString(Annotatable.ClassPoolName)
   private lazy val sourceFileNameIndex: U2 = constantPool.addString("SourceFile")
 
   private var accessFlags: U2 = defaultClassAccessFlags
@@ -69,10 +69,11 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     new FieldHandler(inf, constantPool)
   }
 
-  def addMethod(retTpe: String, name: String, args: String, isAbstract: Boolean, signature: String): MethodHandler = {
+  def addMethod(retTpe: String, name: String, args: List[String], isAbstract: Boolean, signature: String): MethodHandler = {
     val accessFlags: U2 = defaultMethodAccessFlags
     val nameIndex: U2 = constantPool.addString(name)
-    val descriptorIndex: U2 = constantPool.addString(s"($args)$retTpe")
+    val argDescriptor = args.mkString
+    val descriptorIndex: U2 = constantPool.addString(s"($argDescriptor)$retTpe")
     val code = if (isAbstract) None else Some(CodeAttributeInfo(codeNameIndex))
     val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, code.toList)
     methods = methods ::: (inf :: Nil)
@@ -81,15 +82,16 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   }
 
   def addMainMethod: MethodHandler = {
-    val handler = addMethod("V", "main", "[Ljava/lang/String;", false, "main(args: java::lang::String[]): Unit")
+    val handler = addMethod("V", "main", "[Ljava/lang/String;" :: Nil, false, "main(args: java::lang::String[]): Unit")
     handler.setFlags(Flags.METHOD_ACC_PUBLIC | Flags.METHOD_ACC_STATIC)
     handler
   }
 
-  def addConstructor(args: String, signature: String): MethodHandler = {
+  def addConstructor(args: List[String], signature: String): MethodHandler = {
     val accessFlags: U2 = Flags.METHOD_ACC_PUBLIC
     val nameIndex: U2 = constantPool.addString(constructorName)
-    val descriptorIndex: U2 = constantPool.addString(s"($args)V")
+    val argDescriptor = args.mkString
+    val descriptorIndex: U2 = constantPool.addString(s"($argDescriptor)V")
     val code = CodeAttributeInfo(codeNameIndex)
     val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, List(code))
     methods = methods ::: (inf :: Nil)
@@ -97,7 +99,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   }
 
   def addClassInitializer: MethodHandler = {
-    val mh = addMethod("V", classInitializerName, "", false, s"$classInitializerName(): Unit")
+    val mh = addMethod("V", classInitializerName, Nil, false, s"$classInitializerName(): Unit")
     mh.setFlags(Flags.METHOD_ACC_STATIC)
     mh
   }
@@ -107,7 +109,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     import AbstractByteCodes._
     import ByteCodes._
 
-    val mh = addConstructor("", "new()")
+    val mh = addConstructor(Nil, "new()")
     mh.codeHandler << ALOAD_0
     mh.codeHandler << InvokeSpecial(superClassName, constructorName, "()V")
     mh.codeHandler << RETURN
@@ -122,9 +124,9 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
       attributes ::= attr
     }
 
-    val inf = new AnnotationInfo(constantPool.addString(name), Nil)
-    annotationAttribute.get.annotations ::= inf
-    new AnnotationHandler(inf, constantPool)
+    val annotationInfo = new AnnotationInfo(constantPool.addString(name), Nil)
+    annotationAttribute.get.addAnnotation(annotationInfo)
+    new AnnotationHandler(annotationInfo, constantPool)
   }
 
   /** Writes the binary representation of this class file to a file. */

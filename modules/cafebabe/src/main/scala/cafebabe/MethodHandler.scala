@@ -7,26 +7,39 @@ import cafebabe.ClassFileTypes._
  * specify a method's body. <code>MethodHandler</code>s should not be created
  * manually but rather obtained directly when adding a method to a
  * <code>ClassFile</code>. */
-class MethodHandler private[cafebabe](m: MethodInfo, c: Option[CodeAttributeInfo], cp: ConstantPool, paramTypes: String, signature: String) extends Annotatable {
+class MethodHandler private[cafebabe](
+  m: MethodInfo,
+  c: Option[CodeAttributeInfo],
+  cp: ConstantPool,
+  paramTypes: List[String],
+  signature: String) extends Annotatable {
   private var ch: Option[CodeHandler] = None
 
-  private lazy val annotationNameIndex = cp.addString("RuntimeInvisibleAnnotations")
+  private lazy val annotationNameIndex = cp.addString(Annotatable.ClassPoolName)
+  private lazy val parameterAnnotationNameIndex = cp.addString("RuntimeVisibleParameterAnnotations")
 
   def codeHandler: CodeHandler = {
     if (c.isEmpty)
       sys.error("Can't get a code handler from an abstract method.")
 
     if (ch.isEmpty)
-      ch = Some(new CodeHandler(c.get, cp, paramTypes, m.isStatic, signature))
+      ch = Some(new CodeHandler(c.get, cp, paramTypes.mkString, m.isStatic, signature))
 
     ch.get
   }
 
+  def addParameterAnnotation(index: Int, name: String): AnnotationHandler = {
+    val annotationAttribute = m.getParameterAnnotationAttribute(parameterAnnotationNameIndex, paramTypes.size)
+    val annotationInfo = new AnnotationInfo(cp.addString(name), Nil)
+    annotationAttribute.addAnnotation(index, annotationInfo)
+    new AnnotationHandler(annotationInfo, cp)
+  }
+
   override def addAnnotation(name: String): AnnotationHandler = {
     val annotationAttribute = m.getAnnotationAttribute(annotationNameIndex)
-    val inf = new AnnotationInfo(cp.addString(name), Nil)
-    annotationAttribute.annotations ::= inf
-    new AnnotationHandler(inf, cp)
+    val annotationInfo = new AnnotationInfo(cp.addString(name), Nil)
+    annotationAttribute.addAnnotation(annotationInfo)
+    new AnnotationHandler(annotationInfo, cp)
   }
 
   def setFlags(flags: U2): Unit = {

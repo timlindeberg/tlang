@@ -2,13 +2,39 @@ package cafebabe
 
 import cafebabe.ClassFileTypes.{U1, U2, U4}
 
+import scala.collection.mutable.ListBuffer
+
 class AnnotationAttribute(override val attributeNameIndex: U2) extends AttributeInfo(attributeNameIndex, Nil) {
-  var annotations: List[AnnotationInfo] = Nil
+  private var annotations: List[AnnotationInfo] = Nil
+
+  def addAnnotation(annotation: AnnotationInfo): Unit = {
+    annotations ::= annotation
+  }
 
   override def toStream(stream: ByteStream): ByteStream = {
     val numAnnotations: U2 = annotations.size.asInstanceOf[U2]
     val attributeLength: U4 = 2 + annotations.map { _.size }.sum
     stream << attributeNameIndex << attributeLength << numAnnotations << annotations
+  }
+}
+
+class ParameterAnnotationAttribute(override val attributeNameIndex: U2, val numParameters: U1) extends AttributeInfo(attributeNameIndex, Nil) {
+  private val parameterAnnotations: List[ListBuffer[AnnotationInfo]] = List.fill(numParameters)(ListBuffer())
+
+  def addAnnotation(index: Int, annotation: AnnotationInfo): Unit = {
+    parameterAnnotations(index) += annotation
+  }
+
+  override def toStream(stream: ByteStream): ByteStream = {
+    val attributeLength: U4 = 1 + parameterAnnotations
+      .map { annotations => 2 + annotations.map { _.size }.sum }
+      .sum
+    stream << attributeNameIndex << attributeLength << numParameters
+
+    parameterAnnotations foreach { annotations =>
+      stream << annotations.size.asInstanceOf[U2] << annotations
+    }
+    stream
   }
 }
 
