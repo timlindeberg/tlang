@@ -19,7 +19,7 @@ trait TreeTesting extends MockitoSugar {
   val IntType = ClassID(Types.Int.name)
   val StringType = ClassID(Types.String.name)
 
-  private val MaxPositionSize = 100
+  private val MaxPositionSize = 200
   private val random = new Random(0)
 
   implicit def stringToClassId(str: String): ClassID = ClassID(str)
@@ -127,7 +127,7 @@ trait TreeTesting extends MockitoSugar {
     }
   }
 
-  def randomPosition = Position(
+  def randomPosition: Position = Position(
     random.nextInt(MaxPositionSize),
     random.nextInt(MaxPositionSize),
     random.nextInt(MaxPositionSize),
