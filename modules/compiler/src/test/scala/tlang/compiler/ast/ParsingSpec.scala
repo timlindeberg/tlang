@@ -24,7 +24,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
   // println(1)
   // println(2)
   // Def D() = 1
-  // def (a: A) = 1
+  // def E(a: A) = 1
   // @AnnotationA("ABC", 1) class F
   // trait G
   it should "parse a compilation unit" in {
