@@ -9,7 +9,7 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.CompilationException
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.testutils.TestPosition
-import tlang.utils.{FileSource, NoPosition, Position}
+import tlang.utils.{FileSource, NoPosition, Position, Positioned}
 
 import scala.reflect.{ClassTag, classTag}
 
@@ -31,7 +31,10 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
     }
   }
 
-  private lazy val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)
+  private lazy val Trees: Map[Class[_], List[Tree]] = Tree
+    .groupBy { _.getClass }
+    .mapValues { trees => trees.sortBy(_.asInstanceOf[Positioned]) }
+    .asInstanceOf[Map[Class[_], List[Tree]]]
 
   private def testPositions[T <: Tree : ClassTag](expectedPositions: TestPosition*): Unit = {
     val clazz = classTag[T].runtimeClass
@@ -55,20 +58,21 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
   }
 
   testPositions[CompilationUnit](
-    TestPosition(1, 1, 57, 15),
+    TestPosition(1, 1, 58, 15),
   )
   testPositions[ClassDecl](
     TestPosition(1, 1, 51, 11),
   )
   testPositions[TraitDecl](
-    TestPosition(55, 1, 55, 8),
+    TestPosition(55, 1, 56, 61),
   )
   testPositions[ExtensionDecl](
-    TestPosition(57, 1, 57, 15),
+    TestPosition(58, 1, 58, 15),
   )
   testPositions[MethodDecl](
     TestPosition(12, 2, 12, 30),
     TestPosition(14, 2, 51, 11),
+    TestPosition(56, 2, 56, 61),
   )
   testPositions[ConstructorDecl](
     TestPosition(8, 2, 8, 46),
@@ -189,9 +193,9 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
     TestPosition(20, 21, 20, 27),
   )
   testPositions[And](
-    TestPosition(15, 6, 15, 52),
-    TestPosition(15, 6, 15, 38),
     TestPosition(15, 6, 15, 25),
+    TestPosition(15, 6, 15, 38),
+    TestPosition(15, 6, 15, 52),
   )
   testPositions[Or](
     TestPosition(20, 9, 20, 27),
@@ -254,6 +258,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
     TestPosition(50, 18, 50, 19),
     TestPosition(50, 21, 50, 22),
     TestPosition(54, 41, 54, 42),
+    TestPosition(56, 51, 56, 52),
   )
   testPositions[LongLit](
     TestPosition(31, 11, 31, 13),
@@ -308,11 +313,14 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
     TestPosition(48, 11, 48, 12),
     TestPosition(49, 13, 49, 19),
     TestPosition(50, 11, 50, 17),
-    TestPosition(55, 7, 55, 8),
     TestPosition(54, 2, 54, 12),
     TestPosition(54, 14, 54, 25),
-    TestPosition(57, 11, 57, 12),
-    TestPosition(57, 14, 57, 15),
+    TestPosition(55, 7, 55, 8),
+    TestPosition(56, 12, 56, 22),
+    TestPosition(56, 24, 56, 35),
+    TestPosition(56, 57, 56, 60),
+    TestPosition(58, 11, 58, 12),
+    TestPosition(58, 14, 58, 15),
   )
   testPositions[VariableID](
     TestPosition(3, 6, 3, 7),
@@ -438,6 +446,8 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
   testPositions[Annotation](
     TestPosition(54, 1, 54, 12),
     TestPosition(54, 13, 54, 43),
+    TestPosition(56, 11, 56, 22),
+    TestPosition(56, 23, 56, 53),
   )
   testPositions[KeyValuePair](
     TestPosition(54, 26, 54, 35),

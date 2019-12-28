@@ -44,7 +44,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     case OperatorDecl(operatorType, modifiers, annos, args, retType, stat) =>
       pp"${ annotations(annos) }${ definition(modifiers) } ${ operatorType.opSign }(${ commaSeparated(args) })${ optional(retType) { t => pp": $t" } } = $stat"
     // Modifiers
-    case Formal(tpe, id)        => pp"$id: $tpe"
+    case Formal(tpe, id, annos) => pp"${ annotations(annos) }$id: $tpe"
     case KeyValuePair(id, expr) => pp"$id = $expr"
     case Private()              => pp"private"
     case Public()               => pp"public"

@@ -62,6 +62,8 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
         val typeChecker = TypeChecker(ctx, cu, methodSymbol)
 
         method.annotations foreach { typeChecker.typeCheckAnnotation }
+        method.args.flatMap(_.annotations) foreach { typeChecker.typeCheckAnnotation }
+        
         typeChecker.typeCheckMethod()
       }
   }

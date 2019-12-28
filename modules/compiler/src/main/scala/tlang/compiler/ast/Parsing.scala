@@ -76,8 +76,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
    * [ <packageDeclaration> <statementEnd>  ]
    * { <importDeclaration> <statementEnd> }
    * {
-   * ( <classDeclaration> | <traitDeclaration> | <extensionDeclaration> | <annotationDeclaration> | <methodDeclaration> | <statement> )
-   * <statementEnd>
+   *    { <annotation> }
+   *    ( <classDeclaration> | <traitDeclaration> | <extensionDeclaration> | <annotationDeclaration> | <methodDeclaration> | <statement> )
+   *    <statementEnd>
    * }
    * <EOF>
    */
@@ -261,7 +262,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     AnnotationDecl(id, methods, annotations)
   }
 
-  /** <classMethods> ::= <indent> { { <annotationDeclaration> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
+  /** <classMethods> ::= <indent> { { <annotation> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
   def classMethods: List[MethodDeclTree] = {
     eat(INDENT)
     val methods = until(DEDENT) {
@@ -275,7 +276,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     methods
   }
 
-  /** <classBody> ::= <indent> { { <annotationDeclaration> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
+  /** <classBody> ::= <indent> { { <annotation> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
   def classBody: (List[VarDecl], List[MethodDeclTree]) = {
     eat(INDENT)
     val trees = until(DEDENT) {
@@ -542,12 +543,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <methodBody> ::= [ "=" <statement> ] */
   def methodBody: Option[StatTree] = optional(EQSIGN) { replaceWithReturnStatement(statement) }
 
-  /** <formal> ::= <identifier> : <tpe> */
+  /** <formal> ::= { <annotation> } <identifier> : <tpe> */
   def formal: Formal = positioned {
+    val annotations = untilNot(AT)(annotation)
     val id = identifier(VariableID)
     eat(COLON)
     val typ = tpe
-    Formal(typ, id)
+    Formal(typ, id, annotations)
   }
 
   /** <keyValuePair> ::= <identifier> = <expression> */

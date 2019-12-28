@@ -94,10 +94,13 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
         case _                    => ???
       }
 
-      methodDecl.args.zipWithIndex.foreach { case (arg, index) =>
-        if (index % 2 == 0)
-          methodHandle.addParameterAnnotation(index, s"LABC$index;")
+      methodDecl.getSymbol.argList.zipWithIndex.foreach { case (arg, index) =>
+        arg.annotations.foreach { annotation =>
+          val annotationHandler = methodHandle.addParameterAnnotation(index, annotation.getType.byteCodeName)
+          addAnnotationValues(annotationHandler, annotation)
+        }
       }
+
       val flags = getMethodFlags(methodDecl)
       methodHandle.setFlags(flags)
       methSymbol.annotations foreach { addAnnotation(methodHandle, _) }
@@ -126,6 +129,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
   private def addAnnotation(annotatable: cafebabe.Annotatable, annotation: Symbols.AnnotationSymbol): Unit = {
     val annotationHandler = annotatable.addAnnotation(annotation.getType.byteCodeName)
+    addAnnotationValues(annotationHandler, annotation)
+  }
+
+  private def addAnnotationValues(annotationHandler: AnnotationHandler, annotation: Symbols.AnnotationSymbol): Unit = {
     annotation.elements foreach { case (name, v) =>
       v match {
         case IntAnnotationValue(v)    => annotationHandler.addValue(name, v)

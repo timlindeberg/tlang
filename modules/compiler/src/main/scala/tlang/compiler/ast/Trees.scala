@@ -299,7 +299,11 @@ object Trees {
     val id: MethodID = MethodID("")
   }
 
-  case class Formal(tpe: TypeTree, id: VariableID) extends Tree with Symbolic[VariableSymbol]
+  case class Formal(
+    tpe: TypeTree,
+    id: VariableID,
+    annotations: List[Annotation] = Nil)
+    extends Tree with Annotatable with Symbolic[VariableSymbol]
   case class KeyValuePair(id: VariableID, expr: ExprTree) extends Tree
 
   /*---------------------------- Statement Trees ----------------------------*/

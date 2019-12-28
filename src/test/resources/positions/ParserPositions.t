@@ -52,6 +52,7 @@ class Class<T> : T, B, C =
 
 
 @Annotation @AnnotationB(a = "abc", b = 1)
-trait B
+trait B =
+	Def Func(@Annotation @AnnotationB(a = "abc", b = 1) a: Int)
 
 extension A: B

@@ -51,3 +51,18 @@ val annotations = c.getAnnotations()
 // we need enums in annotations (and enums in the language) so for now
 // it's just empty
 println(annotations) // res: []
+
+
+Def Test(@AnnotationA a: Int, @AnnotationA @AnnotationB(S = "ABC") b: Int) =
+	println(a + b)
+
+Def Test2(
+    @AnnotationA a: Int,
+    @AnnotationA @AnnotationB(S = "ABC") b: Int,
+    @AnnotationA @AnnotationC(
+        A = 5,
+        B = 5.0,
+        C = "GHI",
+    ) c: Int,
+) =
+	println(a + b + c)

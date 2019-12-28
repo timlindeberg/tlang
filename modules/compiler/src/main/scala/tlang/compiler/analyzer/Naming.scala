@@ -221,6 +221,7 @@ case class NameAnalyser(
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)
 
+    addAnnotations(newSymbol, formal)
     methSymbol.addArgument(newSymbol)
 
     // Don't put out warning when args is unused since it's implicitly defined
@@ -365,9 +366,10 @@ case class NameAnalyser(
   }
 
   private def bindArguments(args: List[Formal]): Unit =
-    for (Formal(typeTree, id) <- args) {
+    for (Formal(typeTree, id, annotations) <- args) {
       val tpe = setType(typeTree)
       id.setType(tpe)
+      annotations foreach bind
     }
 
   private def bindFields(classDecl: ClassDeclTree): Unit =
