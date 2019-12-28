@@ -139,6 +139,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
     TestPosition(16, 4, 16, 18),
   )
   testPositions[Plus](
+    TestPosition(10, 6, 10, 7), // First is in the operator declaration
     TestPosition(16, 12, 16, 17),
   )
   testPositions[Minus](

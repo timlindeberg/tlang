@@ -735,6 +735,8 @@ object Trees {
   case class Empty() extends ExprTree with Leaf {
     override def toString = "<EMPTY>"
     override def getType: Type = TNull
+
+    setNoPos()
   }
 
   // Statements that have no effect on their own.

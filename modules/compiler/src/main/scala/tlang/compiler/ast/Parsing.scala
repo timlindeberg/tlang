@@ -12,7 +12,7 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.{Logging, NoPosition, Positioned}
+import tlang.utils.{Logging, NoPosition, Position, Positioned}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -84,7 +84,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def compilationUnit: CompilationUnit = positioned {
     val pack = tokens.next.kind match {
       case PACKAGE => packageDeclaration <| statementEnd
-      case _       => Package(Nil)
+      case _       => Package(Nil).setNoPos()
     }
 
     val imps = untilNot(IMPORT) { importDeclaration <| statementEnd }
@@ -147,9 +147,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     if (stats.isEmpty)
       return createMainClass(mainName, methods) :: classes
 
-    methods.find { _.id.name == Constants.MainMethod } ifDefined { mainMethod =>
-      report(MainMethodAlreadyDefined(mainMethod, stats.head))
-    }
+    methods
+      .find { _.id.name == Constants.MainMethod }
+      .ifDefined { mainMethod => report(MainMethodAlreadyDefined(mainMethod, stats.head)) }
 
     val mainMethod = createMainMethod(stats)
     createMainClass(mainName, mainMethod :: methods) :: classes
@@ -158,20 +158,26 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   private def createMainClass(name: String, methods: List[MethodDeclTree]) = {
     val start = methods.headOption.getOrElse(NoPosition)
     val end = methods.lastOption.getOrElse(NoPosition)
-    ClassDecl(ClassID(name), methods = methods).setPos(start, end)
+    ClassDecl(ClassID(name).setNoPos(), methods = methods).setPos(start, end)
   }
 
   private def createMainMethod(stats: List[StatTree]): MethodDecl = {
-    val args = List(Formal(ArrayType(ClassID(Constants.JavaString, List())), VariableID("args")))
-    val modifiers: Set[Modifier] = Set(Public(), Static())
+    val arg = Formal(
+      ArrayType(
+        ClassID(Constants.JavaString, List()).setNoPos()
+      ).setNoPos(),
+      VariableID("args").setNoPos()
+    ).setNoPos()
+    val modifiers: Set[Modifier] = Set(Public().setNoPos(), Static().setNoPos())
+    val codePos = Position(stats.head, tokens.lastVisible)
     MethodDecl(
       MethodID(Constants.MainMethod).setNoPos(),
       modifiers,
       Nil,
-      args,
-      Some(UnitType()),
-      Some(Block(stats))
-    ).setPos(stats.head, tokens.lastVisible)
+      arg :: Nil,
+      Some(UnitType().setNoPos()),
+      Some(Block(stats).setPos(codePos))
+    ).setPos(codePos)
   }
 
   /** <packageDeclaration> ::= package <identifierName> { :: <identifierName> } */
@@ -405,7 +411,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
    * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-   * */
+   **/
   def operator(modifiers: Set[Modifier], annotations: List[Annotation]): OperatorDecl = {
     modifiers.findInstance[Implicit] ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -415,9 +421,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     // arguments they should have. This is done since minus can have both
     // one or two operands.
 
-    def minusOperator: (OperatorTree, List[Formal], Set[Modifier]) = {
+    def minusOperator = {
       // Minus is a special case since it can be both a unary and a binary operator
-      eat(MINUS, LPAREN)
+      val pos = tokens.next
+      eat(MINUS)
+      eat(LPAREN)
       val f1 = formal
       tokens.next.kind match {
         case COMMA =>
@@ -426,18 +434,21 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           eat(RPAREN)
           if (tokens.next.kind == COMMA)
             eat(COMMA)
-          val operatorType = Minus(Empty(), Empty()).setType(TUnit)
-          (operatorType, List(f1, f2), modifiers + Static())
+          val operatorType = Minus(Empty(), Empty()).setType(TUnit).setPos(pos, pos)
+          (operatorType, List(f1, f2))
         case _     =>
           eat(RPAREN)
-          val operatorType = Negation(Empty()).setType(TUnit)
-          (operatorType, List(f1), modifiers + Static())
+          val operatorType = Negation(Empty()).setType(TUnit).setPos(pos, pos)
+          (operatorType, List(f1))
       }
     }
 
-    def binaryOperator(constructor: (ExprTree, ExprTree) => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
-      eat(tokens.next.kind)
-      val operatorType = constructor(Empty(), Empty()).setType(TUnit)
+    def binaryOperator(constructor: (ExprTree, ExprTree) => OperatorTree) = {
+      val operatorType = positioned {
+        eat(tokens.next.kind)
+        constructor(Empty(), Empty()).setType(TUnit)
+      }
+
       eat(LPAREN)
       val f1 = formal
       eat(COMMA)
@@ -445,19 +456,24 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       if (tokens.next.kind == COMMA)
         eat(COMMA)
       eat(RPAREN)
-      (operatorType, List(f1, f2), modifiers + Static())
+      (operatorType, List(f1, f2))
     }
 
-    def unaryOperator(constructor: ExprTree => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
-      eat(tokens.next.kind)
-      val operatorType: OperatorTree = constructor(Empty()).setType(TUnit)
+    def unaryOperator(constructor: ExprTree => OperatorTree) = {
+      val operatorType = positioned {
+        eat(tokens.next.kind)
+        constructor(Empty()).setType(TUnit)
+      }
+
       eat(LPAREN)
       val f = formal
       eat(RPAREN)
-      (operatorType, List(f), modifiers + Static())
+      (operatorType, List(f))
     }
 
     def indexingOperator = {
+      val start = tokens.next
+
       eat(LBRACKET)
 
       val (numArgs, operatorType) = tokens.next.kind match {
@@ -465,31 +481,28 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           eat(RBRACKET)
           tokens.next.kind match {
             case LPAREN =>
-              (1, ArrayRead(Empty(), Empty()))
+              (1, ArrayRead(Empty(), Empty()).setPos(start, tokens.lastVisible))
             case EQSIGN =>
+              val arrPos = tokens.lastVisible
               eat(EQSIGN)
-              val arrRead = ArrayRead(Empty(), Empty()).setType(TNull)
-              (2, Assign(arrRead, Empty()))
+              val arrRead = ArrayRead(Empty(), Empty()).setType(TNull).setPos(start, arrPos)
+              (2, Assign(arrRead, Empty()).setPos(start, tokens.lastVisible))
             case _      => report(wrongToken(EQSIGN, LPAREN))
           }
         case COLON    =>
           eat(COLON, RBRACKET)
-          (3, ArraySlice(Empty(), None, None, None))
+          (3, ArraySlice(Empty(), None, None, None).setPos(start, tokens.lastVisible))
         case _        => report(wrongToken(RBRACKET, COLON))
-      }
-
-      modifiers.findInstance[Static].ifDefined { static =>
-        report(StaticIndexingOperator(static))
       }
 
       val args = commaList(LPAREN, RPAREN)(formal)
       if (args.lengthCompare(numArgs) != 0)
         report(UnexpectedToken(tokens.nextIncludingNewlines, tokens.last))
 
-      (operatorType, args, modifiers)
+      (operatorType, args)
     }
 
-    val (operatorType, args, newModifiers) = tokens.next.kind match {
+    val (operatorType, args) = tokens.next.kind match {
       case MINUS         => minusOperator
       case PLUS          => binaryOperator(Plus)
       case TIMES         => binaryOperator(Times)
@@ -516,8 +529,14 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
     val retType = optional(COLON)(returnType)
     val methBody = methodBody
+    val newModifiers = operatorType match {
+      case _: ArrayOperatorTree =>
+        modifiers.findInstance[Static] ifDefined { static => report(StaticIndexingOperator(static)) }
+        modifiers
+      case _                    => modifiers + Static().setNoPos()
+    }
 
-    OperatorDecl(operatorType.setNoPos().setType(TNull), newModifiers, annotations, args, retType, methBody)
+    OperatorDecl(operatorType.setType(TNull), newModifiers, annotations, args, retType, methBody)
   }
 
   /** <methodBody> ::= [ "=" <statement> ] */
@@ -631,7 +650,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   private def functionLikeStatement[T <: StatTree](methType: TokenKind, cons: ExprTree => T): T = positioned {
     eat(methType, LPAREN)
     val expr = tokens.next.kind match {
-      case RPAREN => StringLit("")
+      case RPAREN => StringLit("").setNoPos()
       case _      => expression
     }
     eat(RPAREN)
@@ -670,7 +689,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val init = forInit
     eat(SEMICOLON)
     val condition = tokens.next.kind match {
-      case SEMICOLON => TrueLit() // if condition is left out, use 'true'
+      case SEMICOLON => TrueLit().setNoPos() // if condition is left out, use 'true'
       case _         => expression
     }
     val post = commaList(SEMICOLON, RPAREN)(expression)

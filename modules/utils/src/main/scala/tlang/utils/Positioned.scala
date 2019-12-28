@@ -87,6 +87,8 @@ object NoPosition extends Position {
   setNoPos()
 }
 
+object UninitializedPosition extends Position
+
 object Position {
 
   def apply(line: Int, col: Int, endLine: Int, endCol: Int): Position =
@@ -113,9 +115,9 @@ object Position {
 
 class Position extends Positioned {
   override def equals(obj: scala.Any): Boolean = obj match {
-    case Position(line, col, endLine, endCole) =>
-      this.line == line && this.col == col && this.lineEnd == endLine && this.colEnd == endCole
-    case _                                     => false
+    case Position(line, col, endLine, endCol) =>
+      this.line == line && this.col == col && this.lineEnd == endLine && this.colEnd == endCol
+    case _                                    => false
   }
 
   override def hashCode(): Int = {

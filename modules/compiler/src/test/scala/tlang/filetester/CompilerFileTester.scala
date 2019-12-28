@@ -4,7 +4,7 @@ package filetester
 import better.files.File
 import tlang.compiler.analyzer.Symbols.Symbolic
 import tlang.compiler.analyzer.Types
-import tlang.compiler.analyzer.Types.{TArray, TObject, Typed}
+import tlang.compiler.analyzer.Types.Typed
 import tlang.compiler.argument.VerboseFlag
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{TreePrinter, Trees}
@@ -26,7 +26,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
   import ctx.{formatter, options}
 
   private val solutionParser = SolutionParser(ctx)
-  private val solutionComparor = SolutionVerifier()
+  private val solutionVerifier = SolutionVerifier()
 
   def execute(): TestResult = {
     try {
@@ -64,7 +64,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
     }
 
     val cus = getCUs(result)
-    cus foreach verifyTypesAndSymbols
+    cus foreach verifyTree
 
     val withLinePrinting = cus.map { appendLineNumberToPrintStatements }
     Compiler.GenerateCode.execute(ctx)(withLinePrinting)
@@ -139,13 +139,13 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
     }
 
     val results = solutionParser.parse(result)
-    solutionComparor(results, solutions, colorContent = false)
+    solutionVerifier(results, solutions, colorContent = false)
   }
 
   private def verifyErrorCodes(messages: CompilerMessages, messageType: MessageType, solutions: IndexedSeq[Solution]): Unit = {
     val foundCodes = solutionParser.parse(messages(messageType))
     val sorted = foundCodes.sortBy { sol => (sol.line, sol.content) }
-    solutionComparor(sorted, solutions, colorContent = true)
+    solutionVerifier(sorted, solutions, colorContent = true)
   }
 
   private def getCUs(result: List[_]): List[CompilationUnit] = {
@@ -156,10 +156,10 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
     result.asInstanceOf[List[CompilationUnit]]
   }
 
-  private def verifyTypesAndSymbols(cu: CompilationUnit): Unit = {
-    def failMissing(t: Tree, missing: String) = {
+  private def verifyTree(cu: CompilationUnit): Unit = {
+    def failMissing(tree: Tree, missing: String) = {
       val treePrinter = new TreePrinter
-      val treeRepr = ScalaRunTime._toString(t)
+      val treeRepr = ScalaRunTime._toString(tree)
 
       val debugTree = formatter.grid
         .header(s"Tree $treeRepr has a missing $missing")
@@ -179,6 +179,9 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
       tree match {
         case t: Typed if !t.hasType => failMissing(tree, "type")
         case _                      =>
+      }
+      if (tree.getPos == UninitializedPosition) {
+        failMissing(tree, "position")
       }
     }
   }
