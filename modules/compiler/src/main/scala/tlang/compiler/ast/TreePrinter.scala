@@ -150,7 +150,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
       case UninitializedPosition                => missing
       case NoPosition                           => Green("-")
       case Position(line, col, lineEnd, colEnd) =>
-        def format(color: Color, i: Int): String = color(i.toString.padTo(maxPositionSize, ' '))
+        def format(color: Color, pos: Int): String = color(pos.toString.padTo(maxPositionSize, ' '))
 
         s"${ format(Blue, line) } ${ format(Magenta, col) } ${ format(Blue, lineEnd) } ${ format(Magenta, colEnd) }"
     }
