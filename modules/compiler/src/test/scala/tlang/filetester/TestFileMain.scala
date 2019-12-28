@@ -10,6 +10,7 @@ import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.help.HelpOutput
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
 import tlang.compiler.utils.TLangSyntaxHighlighter
+import tlang.filetester.argument.KeepGeneratedFilesFlag
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
@@ -27,6 +28,7 @@ object TestFileMain extends Logging {
     ClassPathFlag,
     ColorSchemeFlag,
     JSONFlag,
+    KeepGeneratedFilesFlag,
     LineWidthFlag,
     LogLevelFlag,
     MessageContextFlag,
@@ -93,6 +95,7 @@ case class TestFileMain(ctx: Context) extends Logging {
 
   def run(): Unit = {
     interruptionHandler.setHandler(Category("TestFile"), deleteOutputDirectory _)
+
     val helpArgs = options(CompilerHelpFlag)
 
     if (options.isEmpty || (HelpFlag.defaultArg in helpArgs)) {
@@ -138,6 +141,9 @@ case class TestFileMain(ctx: Context) extends Logging {
   }
 
   private def deleteOutputDirectory(): Unit = {
+    if (options(KeepGeneratedFilesFlag))
+      return
+
     info"Deleting output directory"
     File(TestOutputDirectory).delete(swallowIOExceptions = true)
   }
