@@ -10,7 +10,7 @@ import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.help.HelpOutput
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.filetester.argument.KeepGeneratedFilesFlag
+import tlang.filetester.argument.KeepClassFilesFlag
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
@@ -28,7 +28,7 @@ object TestFileMain extends Logging {
     ClassPathFlag,
     ColorSchemeFlag,
     JSONFlag,
-    KeepGeneratedFilesFlag,
+    KeepClassFilesFlag,
     LineWidthFlag,
     LogLevelFlag,
     MessageContextFlag,
@@ -141,7 +141,7 @@ case class TestFileMain(ctx: Context) extends Logging {
   }
 
   private def deleteOutputDirectory(): Unit = {
-    if (options(KeepGeneratedFilesFlag))
+    if (options(KeepClassFilesFlag))
       return
 
     info"Deleting output directory"
