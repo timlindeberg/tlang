@@ -7,7 +7,6 @@ import tlang.compiler.ast.Trees.Tree
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
-import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.utils.JSON.Json
 
 object ASTOutput {
@@ -37,9 +36,7 @@ case class ASTOutput(
         .content(tree.sourceDescription)
         .row()
         .content(replaceTabs(prettyPrinter(tree)).trimWhiteSpaces)
-        .row(TruncatedColumn, Column, Column, Column, Column)
-        .columnHeaders("Tree", "Reference", "Symbol", "Type", "Position")
-        .contents(treePrinter(tree))
+      treePrinter.addToGrid(grid, tree)
     }
     grid.render()
   }

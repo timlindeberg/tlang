@@ -11,6 +11,7 @@ import tlang.compiler.ast.{TreePrinter, Trees}
 import tlang.compiler.execution.Compiler
 import tlang.compiler.lowering.TreeBuilder
 import tlang.compiler.messages.{CompilationException, CompilerMessages, MessageType}
+import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.output.{ErrorMessageOutput, SimpleOutput}
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.grid.{Column, TruncatedColumn}
@@ -27,6 +28,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
 
   private val solutionParser = SolutionParser(ctx)
   private val solutionVerifier = SolutionVerifier()
+  private val treePrinter = TreePrinter()
 
   def execute(): TestResult = {
     try {
@@ -144,8 +146,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
 
   private def verifyErrorCodes(messages: CompilerMessages, messageType: MessageType, solutions: IndexedSeq[Solution]): Unit = {
     val foundCodes = solutionParser.parse(messages(messageType))
-    val sorted = foundCodes.sortBy { sol => (sol.line, sol.content) }
-    solutionVerifier(sorted, solutions, colorContent = true)
+    solutionVerifier(foundCodes, solutions, colorContent = true)
   }
 
   private def getCUs(result: List[_]): List[CompilationUnit] = {
@@ -158,16 +159,8 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
 
   private def verifyTree(cu: CompilationUnit): Unit = {
     def invalidTree(tree: Tree, missing: String) = {
-      val treePrinter = new TreePrinter
       val treeRepr = ScalaRunTime._toString(tree)
-
-      val debugTree = formatter.grid
-        .row(TruncatedColumn, Column, Column, Column, Column)
-        .columnHeaders("Tree", "Reference", "Symbol", "Type", "Position")
-        .contents(treePrinter(cu))
-        .render()
-
-      fail(s"Tree $treeRepr does not have a $missing:", debugTree)
+      fail(s"Tree $treeRepr does not have a $missing:", treePrinter.drawGrid(tree))
     }
 
     cu foreach { tree: Tree =>

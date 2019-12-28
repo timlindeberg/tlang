@@ -9,6 +9,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
+import tlang.formatting.grid.{Column, Grid, TruncatedColumn}
 import tlang.utils.{NoPosition, Position, UninitializedPosition}
 
 import scala.collection.JavaConverters._
@@ -29,7 +30,20 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
   private var maxPositionSize: Int = 0
 
-  def apply(t: Tree): List[TreePrinterRow] = {
+  def drawGrid(tree: Tree): String = {
+    val grid = formatter.grid
+    addToGrid(grid, tree)
+    grid.render()
+  }
+
+  def addToGrid(grid: Grid, tree: Tree): Grid = {
+    grid
+      .row(TruncatedColumn, Column, Column, Column, Column)
+      .columnHeaders("Tree", "Reference", "Symbol", "Type", "Position")
+      .contents(getGridContent(tree))
+  }
+
+  private def getGridContent(t: Tree): List[TreePrinterRow] = {
     val Indent = List.fill(spacing)(' ')
     val Continuation = Vertical.head :: Indent
     val Whitespace = ' ' :: Indent
