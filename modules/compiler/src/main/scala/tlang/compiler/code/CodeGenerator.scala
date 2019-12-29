@@ -43,6 +43,9 @@ object CodeGenerator {
   val JavaArrays: String = JavaUtil + "Arrays"
   val JavaRuntimeException: String = JavaLang + "RuntimeException"
 
+  def JVMName(className: String): String = className.replaceAll("::", "/")
+  def byteCodeName(className: String): String = "L" + JVMName(className) + ";"
+
   object Nullable {
     def unapply(tpe: Type): Option[Type] = if (tpe.isNullable) Some(tpe) else None
   }
@@ -63,7 +66,7 @@ object CodeGenerator {
   }
 
   implicit class JVMClassSymbol(val classSymbol: ClassSymbol) extends AnyVal {
-    def JVMName: String = classSymbol.name.replaceAll("::", "/")
+    def JVMName: String = CodeGenerator.JVMName(classSymbol.name)
   }
 
   implicit class JVMMethodSymbol(val methSym: MethodSymbol) extends AnyVal {
@@ -109,14 +112,14 @@ object CodeGenerator {
       case Double                       => "D"
       case Char                         => "C"
       case Bool                         => "Z"
-      case objTpe: TObject              => "L" + objTpe.classSymbol.JVMName + ";"
+      case objTpe: TObject              => CodeGenerator.byteCodeName(objTpe.classSymbol.name)
       case TArray(arrTpe)               => "[" + arrTpe.byteCodeName
     }
 
     def codes: CodeMap = t match {
       case TUnit                  => EmptyCodeMap
       case TNull                  => new ObjectCodeMap(JavaObject)
-      case Primitive(Nullable(p)) => new ObjectCodeMap(TRef)
+      case Primitive(Nullable(_)) => new ObjectCodeMap(TRef)
       case Int                    => IntCodeMap
       case Long                   => LongCodeMap
       case Float                  => FloatCodeMap

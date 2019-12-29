@@ -47,7 +47,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     CodeGenerationOutput(phaseName, output)
 
   case class Result(files: Set[String], stackTraces: List[CodegenerationStackTrace])
-  /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
+
   private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): Result = {
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
@@ -65,7 +65,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
     val className = classDecl.getSymbol.JVMName
     val files = ctx.outDirs.map { classFilePath(_, className) }
-    files.foreach { file =>
+    files foreach { file =>
       info"Creating .class file $file"
       classFile.writeToFile(file)
     }
@@ -78,7 +78,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     classDecl.methods.flatMap { methodDecl =>
       val methSymbol = methodDecl.getSymbol
 
-      val methodHandle = methodDecl match {
+      val methodHandler = methodDecl match {
         case _: MethodDecl =>
           val argTypes = methSymbol.argTypes.map { _.byteCodeName }
           val methDescriptor = methodDescriptor(methSymbol)
@@ -94,19 +94,12 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
         case _                    => ???
       }
 
-      methodDecl.getSymbol.argList.zipWithIndex.foreach { case (arg, index) =>
-        arg.annotations.foreach { annotation =>
-          val annotationHandler = methodHandle.addParameterAnnotation(index, annotation.getType.byteCodeName)
-          addAnnotationValues(annotationHandler, annotation)
-        }
-      }
-
       val flags = getMethodFlags(methodDecl)
-      methodHandle.setFlags(flags)
-      methSymbol.annotations foreach { addAnnotation(methodHandle, _) }
+      methodHandler.setFlags(flags)
+      addAnnotations(methodDecl, methodHandler)
 
       if (!methodDecl.isAbstract) {
-        val ch = generateMethod(methodHandle, methodDecl)
+        val ch = generateMethod(methodHandler, methodDecl)
 
         val classSymbol = classDecl.getSymbol
         // If a method is overriden but with another return type
@@ -123,6 +116,27 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
         Some(ch.stackTrace)
       } else {
         None
+      }
+    }
+  }
+
+  private def addAnnotations(methodDecl: MethodDeclTree, methodHandler: MethodHandler): Unit = {
+    def nullableAnnotation = byteCodeName(Constants.TNullableAnnotation)
+
+    val methSymbol = methodDecl.getSymbol
+
+    methSymbol.annotations foreach { addAnnotation(methodHandler, _) }
+    if (methSymbol.getType.isNullable) {
+      methodHandler.addAnnotation(nullableAnnotation)
+    }
+
+    methSymbol.argList.zipWithIndex.foreach { case (arg, index) =>
+      arg.annotations.foreach { annotation =>
+        val annotationHandler = methodHandler.addParameterAnnotation(index, annotation.getType.byteCodeName)
+        addAnnotationValues(annotationHandler, annotation)
+      }
+      if (arg.getType.isNullable) {
+        methodHandler.addParameterAnnotation(index, nullableAnnotation)
       }
     }
   }

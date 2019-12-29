@@ -45,7 +45,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues
 
       val treePositions = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))
-        .map(Position(_))
+        .map { Position(_) }
         .filter { _ != NoPosition }
 
       treePositions

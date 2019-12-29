@@ -1,9 +1,12 @@
 package tlang
 package compiler
 
+import java.io.IOException
+
+import better.files.File
 import tlang.compiler.argument._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.execution.{Compiler, CompilerFileWatcher, TopLevelExecutor, ProgramExecutor}
+import tlang.compiler.execution.{Compiler, CompilerFileWatcher, ProgramExecutor, TopLevelExecutor}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages._
 import tlang.compiler.output._

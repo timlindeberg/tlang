@@ -180,7 +180,7 @@ object Types {
     override def getNonNullable: TObject = if (isNullable) TObject(classSymbol, isNullable = false) else this
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
-        if (classSymbol.name == c.name || c.name == JavaObject) true
+        if (classSymbol.name == c.name) true
         else classSymbol.parents exists { _.getType.isSubTypeOf(tpe) }
       case _          => false
     }

@@ -22,17 +22,19 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       val parser = (Lexing andThen Parsing).execute(testContext) _
       val prettyPrinter = PrettyPrinter()
 
-      val CU = try parser(file).head
-      catch {
+      val CU = try {
+        parser(file).head
+      } catch {
         case e: CompilationException =>
           val errors = ErrorMessageOutput(e.messages, messageTypes = List(MessageType.Error))
           fail(s"Could not parse file $TestFile:" + NL + errors.pretty)
       }
 
-      val printedCU = prettyPrinter(CU)
+      val printedCU = prettyPrinter(CU).print
 
-      val reparsedCU = try parser(StringSource(printedCU, "ParserPositions") :: Nil).head
-      catch {
+      val reparsedCU = try {
+        parser(StringSource(printedCU, "ParserPositions") :: Nil).head
+      } catch {
         case e: CompilationException =>
           val errors = ErrorMessageOutput(e.messages, messageTypes = List(MessageType.Error))
           fail(

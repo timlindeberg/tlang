@@ -155,14 +155,13 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       .toList
 
     var modifiers = convertModifiers(meth)
-    val annotations = meth.getAnnotationEntries
 
-    if (isAnnotatedWith(annotations, TExtensionMethodAnnotation)) {
+    if (isAnnotatedWith(meth, TExtensionMethodAnnotation)) {
       modifiers -= Static() // Remove the static modifier which is added to methods in extension classes
       args = args.drop(1) // Remove the added this argument
     }
 
-    if (isAnnotatedWith(annotations, TImplicitConstructorAnnotation)) {
+    if (isAnnotatedWith(meth, TImplicitConstructorAnnotation)) {
       modifiers += Implicit()
     }
 
@@ -243,8 +242,8 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       .toList
   }
 
-  private def isAnnotatedWith(annotations: Array[AnnotationEntry], name: String): Boolean = {
-    annotations.exists { annotation =>
+  private def isAnnotatedWith(meth: Method, name: String): Boolean = {
+    meth.getAnnotationEntries.exists { annotation =>
       name == jvmObjectNameToTName(annotation.getAnnotationType)
     }
   }

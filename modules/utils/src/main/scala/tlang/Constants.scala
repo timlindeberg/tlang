@@ -37,6 +37,7 @@ object Constants {
   val TAnnotationPackage = s"$TLangPackage::annotations"
   val TExtensionMethodAnnotation = s"$TAnnotationPackage::ExtensionMethod"
   val TExtensionClassAnnotation = s"$TAnnotationPackage::ExtensionClass"
+  val TNullableAnnotation = s"$TAnnotationPackage::Nullable"
   val TExtendedClassName = "ExtendedClass"
 
   val TImplicitConstructorAnnotation = s"$TAnnotationPackage::ImplicitConstructor"
