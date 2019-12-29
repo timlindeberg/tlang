@@ -1,6 +1,6 @@
-var empty = ""
-var s = "String"
-var s2 = "string2"
+val empty = ""
+val s = "String"
+val s2 = "string2"
 println(s) // res: String
 println(s2) // res: string2
 println(new A()) // res: ObjectA
@@ -64,11 +64,19 @@ println(1.0 + s) // res: 1.0String
 println([1, 2, 3] + s) // res: "[1, 2, 3]String"
 println(s + [1, 2, 3]) // res: "String[1, 2, 3]"
 
-// TODO: Fix importing nullable arguments
-// val nullable: Int? = null
-//
-// println(s + nullable) // res: Stringnull
-// println(nullable + s) // res: nullString
+var nullableInt: Int? = null
+var nullableA: A? = null
+println(s + nullableInt) // res: Stringnull
+println(nullableInt + s) // res: nullString
+println(s + nullableA) // res: Stringnull
+println(nullableA + s) // res: nullString
+
+nullableInt = 5
+nullableA = new A()
+println(s + nullableInt) // res: String5
+println(nullableInt + s) // res: 5String
+println(s + nullableA) // res: StringObjectA
+println(nullableA + s) // res: ObjectAString
 
 // Multiplication
 println(empty * 25) // res: ""
@@ -252,10 +260,16 @@ println(String.ValueOf(["a", "b", "c"])) // res: "[a, b, c]"
 println(String.ValueOf(['a', 'b', 'c'])) // res: "[a, b, c]"
 println(String.ValueOf([new A(), new A(), new A()])) // res: "[ObjectA, ObjectA, ObjectA]"
 
-// TODO:
-// val i: Int? = null
-//
-// println(String.ValueOf(i)) // res: null
+// TODO: FIX
+// ValueOf for nullable types
+// nullableInt = null
+// nullableA = null
+// println(String.ValueOf(nullableInt)) // res: null
+// println(String.ValueOf(nullableA)) // res: null
+// nullableInt = 5
+// nullableA = new A()
+// println(String.ValueOf(nullableInt)) // res: 5
+// println(String.ValueOf(nullableA)) // res: ObjectA
 
 class A =
 	Def toString() = "ObjectA"

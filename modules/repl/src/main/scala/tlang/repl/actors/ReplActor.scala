@@ -94,7 +94,7 @@ class ReplActor(
       terminal.close()
       input.saveToFile()
       val terminate = context.system.terminate()
-      if (killProcessOnTerminate) terminate.map { sys.exit(0) } else terminate
+      if (killProcessOnTerminate) terminate.andThen { sys.exit(0) }
     case msg: RenderingMessage  => renderer forward msg
     case msg: EvaluationMessage => replProgram forward msg
   }

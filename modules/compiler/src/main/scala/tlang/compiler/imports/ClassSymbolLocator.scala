@@ -3,10 +3,12 @@ package compiler
 package imports
 
 import org.apache.bcel.classfile._
-import org.apache.bcel.generic.{BasicType, ObjectType, Type}
+import org.apache.bcel.generic.{
+  BasicType, ObjectType, Type => BcelType, ArrayType => BcelArrayType
+}
 import tlang.Constants._
 import tlang.compiler.analyzer.Symbols._
-import tlang.compiler.analyzer.Types._
+import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.Trees._
 
 import scala.collection.mutable
@@ -62,7 +64,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] = {
     locateSymbol(ExtensionDecl.nameToExtensionName(className)) { clazz =>
       findExtendedClassSymbol(clazz) map { extendedClass =>
-        new ExtensionClassSymbol(className) use { _.setExtendedType(TObject(extendedClass)) }
+        new ExtensionClassSymbol(className) use { _.setExtendedType(Types.TObject(extendedClass)) }
       }
     }.asInstanceOf[Option[ExtensionClassSymbol]]
   }
@@ -125,7 +127,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       return Nil
 
     val parent = clazz.getSuperClass match {
-      case null   => List(ObjectSymbol)
+      case null   => List(Types.ObjectSymbol)
       case parent => List(lazySymbol(toTName(parent.getClassName)))
     }
     val traits = clazz
@@ -140,7 +142,8 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       .getFields
       .map { field =>
         val sym = new FieldSymbol(field.getName, convertModifiers(field), owningClass)
-        sym.setType(convertType(field.getType))
+        val isNullable = isAnnotatedWith(field, TNullableAnnotation)
+        sym.setType(convertType(field.getType, isNullable))
         convertAnnotations(field.getAnnotationEntries) foreach sym.addAnnotation
         sym
       }
@@ -150,8 +153,9 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   private def convertMethod(meth: Method, clazz: JavaClass, owningClass: ClassSymbol): MethodSymbol = {
     var args = meth
       .getArgumentTypes
+      .zip(getParameterAnnotations(meth))
       .zipWithIndex
-      .map { case (tpe, i) => convertArgument(tpe, s"arg$i") }
+      .map { case ((tpe, annotations), index) => convertArgument(tpe, annotations, s"arg$index") }
       .toList
 
     var modifiers = convertModifiers(meth)
@@ -170,14 +174,13 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       case name     => name
     }
 
-    val symbol = name.head match {
-      case '$' =>
-        val operatorType = getOperatorType(name)
-        new OperatorSymbol(operatorType, owningClass, None, modifiers)
-      case _   => new MethodSymbol(name, owningClass, None, modifiers)
+    val symbol = getOperatorType(name) match {
+      case Some(operatorType) => new OperatorSymbol(operatorType, owningClass, None, modifiers)
+      case None               => new MethodSymbol(name, owningClass, None, modifiers)
     }
 
-    symbol.setType(convertType(meth.getReturnType))
+    val isNullable = isAnnotatedWith(meth, TNullableAnnotation)
+    symbol.setType(convertType(meth.getReturnType, isNullable))
     symbol.argList = args
     symbol.isAbstract = meth.isAbstract
 
@@ -186,9 +189,12 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     symbol
   }
 
-  private def convertArgument(tpe: Type, newName: String) = {
+  private def convertArgument(tpe: BcelType, annotations: Array[AnnotationEntry], newName: String) = {
+    val isNullable = containsAnnotation(annotations, Constants.TNullableAnnotation)
     val modifiers: Set[Modifier] = Set(Private(), Final())
-    new VariableSymbol(newName, modifiers).setType(convertType(tpe))
+    val variableSymbol = new VariableSymbol(newName, modifiers).setType(convertType(tpe, isNullable))
+    convertAnnotations(annotations) foreach variableSymbol.addAnnotation
+    variableSymbol
   }
 
   private def convertModifiers(obj: AccessFlags): Set[Modifier] = {
@@ -204,30 +210,33 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     set.toSet
   }
 
-  private def convertType(tpe: Type): tlang.compiler.analyzer.Types.Type = tpe match {
-    case x: BasicType                         => x match {
-      case Type.BOOLEAN => Bool
-      case Type.INT     => Int
-      case Type.BYTE    => Int // TODO: Add byte type
-      case Type.SHORT   => Int // TODO: Add short type
-      case Type.CHAR    => Char
-      case Type.LONG    => Long
-      case Type.FLOAT   => Float
-      case Type.DOUBLE  => Double
-      case Type.VOID    => TUnit
-    }
-    case x: ObjectType                        =>
-      val name = toTName(x.getClassName)
-      name match {
-        case TIntRef    => Int.getNullable
-        case TLongRef   => Long.getNullable
-        case TFloatRef  => Float.getNullable
-        case TDoubleRef => Double.getNullable
-        case TCharRef   => Char.getNullable
-        case TBoolRef   => Bool.getNullable
-        case _          => TObject(lazySymbol(name))
+  private def convertType(tpe: BcelType, isNullable: Boolean): Types.Type = {
+    val convertedType = tpe match {
+      case x: BasicType     => x match {
+        case BcelType.BOOLEAN => Types.Bool
+        case BcelType.INT     => Types.Int
+        case BcelType.BYTE    => Types.Int // TODO: Add byte type
+        case BcelType.SHORT   => Types.Int // TODO: Add short type
+        case BcelType.CHAR    => Types.Char
+        case BcelType.LONG    => Types.Long
+        case BcelType.FLOAT   => Types.Float
+        case BcelType.DOUBLE  => Types.Double
+        case BcelType.VOID    => Types.TUnit
       }
-    case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
+      case x: ObjectType    =>
+        val name = toTName(x.getClassName)
+        name match {
+          case TIntRef    => Types.Int
+          case TLongRef   => Types.Long
+          case TFloatRef  => Types.Float
+          case TDoubleRef => Types.Double
+          case TCharRef   => Types.Char
+          case TBoolRef   => Types.Bool
+          case _          => Types.TObject(lazySymbol(name))
+        }
+      case x: BcelArrayType => Types.TArray(convertType(x.getBasicType, isNullable))
+    }
+    if (isNullable) convertedType.getNullable else convertedType
   }
 
   // TODO: This treats all annotation values as strings
@@ -242,15 +251,29 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       .toList
   }
 
-  private def isAnnotatedWith(meth: Method, name: String): Boolean = {
-    meth.getAnnotationEntries.exists { annotation =>
-      name == jvmObjectNameToTName(annotation.getAnnotationType)
+  private def isAnnotatedWith(fieldOrMethod: FieldOrMethod, annotation: String): Boolean = {
+    containsAnnotation(fieldOrMethod.getAnnotationEntries, annotation)
+  }
+
+  private def containsAnnotation(annotations: Array[AnnotationEntry], annotationName: String): Boolean = {
+    annotations.exists { annotation =>
+      annotationName == jvmObjectNameToTName(annotation.getAnnotationType)
     }
+  }
+
+  private def getParameterAnnotations(meth: Method) = {
+    val argumentTypes = meth.getArgumentTypes
+    meth
+      .getParameterAnnotationEntries
+      .map { _.getAnnotationEntries }
+      .padTo(argumentTypes.size, Array.ofDim(0))
   }
 
   private def jvmObjectNameToTName(name: String) = toTName(name.drop(1).dropRight(1))
 
-  private def getOperatorType(name: String) = OperatorTypes(name.drop(1))
+  private def getOperatorType(name: String): Option[OperatorTree] = {
+    if (name.head == '$') OperatorTypes.get(name.drop(1)) else None
+  }
 
   private def lazySymbol(name: String) = {
     SymbolCache.getOrElseUpdate(name, new LazyClassSymbol(name))
