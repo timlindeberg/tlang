@@ -387,7 +387,7 @@ case class MethodFlowAnalyzer(
   private def analyzeComparison(comparison: BinaryOperatorTree, knowledge: Knowledge): Knowledge = {
     val lhs = comparison.lhs
     val rhs = comparison.rhs
-    for ((a, b) <- List((lhs, rhs), (rhs, lhs)))
+    for ((a, b) <- List((lhs, rhs), (rhs, lhs))) {
       knowledge.getIdentifier(a) ifDefined { varId =>
         knowledge.getNumericValue(b) ifDefined { numericValue =>
           val newKnowledge = comparison match {
@@ -400,6 +400,7 @@ case class MethodFlowAnalyzer(
           return knowledge.add(varId, newKnowledge)
         }
       }
+    }
     knowledge
   }
 

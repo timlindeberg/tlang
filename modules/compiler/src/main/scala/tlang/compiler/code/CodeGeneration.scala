@@ -53,7 +53,9 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
       val flags = getFieldFlags(varDecl)
-      classFile.addField(varSymbol.getType.byteCodeName, varSymbol.name).setFlags(flags)
+      val fieldHandler = classFile.addField(varSymbol.getType.byteCodeName, varSymbol.name)
+      fieldHandler.setFlags(flags)
+      varSymbol.annotations foreach { addAnnotation(fieldHandler, _) }
     }
 
     initializeStaticFields(classDecl, classFile)

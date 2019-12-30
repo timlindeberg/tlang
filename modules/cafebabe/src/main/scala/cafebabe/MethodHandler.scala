@@ -36,10 +36,7 @@ class MethodHandler private[cafebabe](
   }
 
   override def addAnnotation(name: String): AnnotationHandler = {
-    val annotationAttribute = m.getAnnotationAttribute(annotationNameIndex)
-    val annotationInfo = new AnnotationInfo(cp.addString(name), Nil)
-    annotationAttribute.addAnnotation(annotationInfo)
-    new AnnotationHandler(annotationInfo, cp)
+    addAnnotation(name, m.getAnnotationAttribute(annotationNameIndex), cp)
   }
 
   def setFlags(flags: U2): Unit = {
