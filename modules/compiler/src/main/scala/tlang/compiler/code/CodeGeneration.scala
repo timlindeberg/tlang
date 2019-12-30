@@ -56,6 +56,9 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
       val fieldHandler = classFile.addField(varSymbol.getType.byteCodeName, varSymbol.name)
       fieldHandler.setFlags(flags)
       varSymbol.annotations foreach { addAnnotation(fieldHandler, _) }
+      if (varSymbol.getType.isNullable) {
+        fieldHandler.addAnnotation(nullableAnnotation)
+      }
     }
 
     initializeStaticFields(classDecl, classFile)
@@ -123,8 +126,6 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   }
 
   private def addAnnotations(methodDecl: MethodDeclTree, methodHandler: MethodHandler): Unit = {
-    def nullableAnnotation = byteCodeName(Constants.TNullableAnnotation)
-
     val methSymbol = methodDecl.getSymbol
 
     methSymbol.annotations foreach { addAnnotation(methodHandler, _) }
@@ -402,6 +403,9 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     mh.codeHandler << ALOAD_0
     mh.codeHandler << InvokeSpecial(superClassName, CodeGenerator.ConstructorName, "()V")
   }
+
+  private def nullableAnnotation = byteCodeName(Constants.TNullableAnnotation)
+
 }
 
 
