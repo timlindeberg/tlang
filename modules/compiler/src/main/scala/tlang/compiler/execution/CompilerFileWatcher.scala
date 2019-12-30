@@ -41,9 +41,7 @@ case class CompilerFileWatcher(
       ctx.output += MessageOutput(s"Watching for ${ Green("changes") }...")
     fileSources foreach startFileWatcher
 
-    while (true) {
-      readNewFileToWatch()
-    }
+    while (readNewFileToWatch()) {}
   }
 
   private def startFileWatcher(fileSource: FileSource): Unit = {
@@ -74,20 +72,22 @@ case class CompilerFileWatcher(
       .toList
   }
 
-  private def readNewFileToWatch(): Unit = {
-    val fileName = scala.io.StdIn.readLine()
-
+  private def readNewFileToWatch(): Boolean = {
+    val fileName = Try(scala.io.StdIn.readLine()) match {
+      case Success(fileName) if fileName != null => fileName
+      case _                                     => return false
+    }
     info"Got new file to watch: $fileName"
 
     val file = Try(File(fileName)) match {
       case Success(file) if file.exists => file
       case _                            =>
         ctx.output += MessageOutput(s"No such file: ${ Red(fileName) }")
-        return
+        return true
     }
     if (watchedFiles.contains(file)) {
       ctx.output += MessageOutput(s"File ${ Red(fileName) } is already being watched.")
-      return
+      return true
     }
 
     ctx.output += MessageOutput(s"Watching new file: ${ Green(fileName) }")
@@ -96,11 +96,12 @@ case class CompilerFileWatcher(
 
     onFilesChanged(fileSource :: Nil)
     startFileWatcher(fileSource)
+    return true
   }
 
   case class CompilerFileMonitor(fileToWatch: File, fileToCompile: File) extends FileMonitor(fileToWatch, fileToWatch.isDirectory) {
 
-    private val filesSource = FileSource(fileToCompile)
+    private val filesSource   = FileSource(fileToCompile)
     private val modifiedTimes = mutable.Map[String, Long]()
 
     override def onModify(file: File, count: Int): Unit = {
@@ -122,7 +123,7 @@ case class CompilerFileWatcher(
     // On Windows the modified event is sometimes triggered twice
     private def hasAlreadyHandled(file: File): Boolean = {
       val lastModified = Files.getLastModifiedTime(file.path).toMillis
-      val path = file.pathAsString
+      val path         = file.pathAsString
       if (modifiedTimes.get(path).contains(lastModified))
         return true
 
