@@ -55,15 +55,13 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
       return
     }
 
+    if (expectedCodes.nonEmpty) {
+      solutionVerifier(IndexedSeq(), expectedCodes, colorContent = true)
+      return
+    }
+
     if (ctx.reporter.hasErrors)
       fail("Compilation failed")
-
-    if (expectedCodes.nonEmpty) {
-      val codes = expectedCodes
-        .map { case Solution(line, errorCode) => s"$line: $errorCode" }
-        .mkString(NL)
-      fail("File compiled successfully but expected the following error codes:", codes)
-    }
 
     val cus = getCUs(result)
     cus foreach verifyTree
