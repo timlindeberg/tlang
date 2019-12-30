@@ -3,12 +3,15 @@ var i: Int? = GetNullableInt1(0)
 if(i != null)
 	println("not null")
 else
+	PrintNullable(i)
 	println("null") // res: null
 
 i = GetNullableInt2(5)
 
 if(i != null)
 	println(i + 1) // res: 6
+	PrintNullable(i)
+	PrintInt(i)
 
 var j = GetNullableInt3(4)
 
@@ -52,6 +55,9 @@ Def GetNullableInt2(i: Int) = i < 5 ? null : i
 Def GetNullableInt3(i: Int): Int? = i < 5 ? null : i
 
 Def GetNullableA(i: Int) = i < 5 ? null : new A()
+
+Def PrintNullable(int: Int?) = println(int ?: -1) // res: -1, 5
+Def PrintInt(int: Int) = println(int) // res: 5
 
 class A =
 

@@ -274,9 +274,18 @@ case class MethodFlowAnalyzer(
 
           analyzeExpr(thn, afterCondition)
           analyzeExpr(els, knowledge + conditionKnowledge.invert)
-        case acc@NormalAccess(obj, _)           =>
+        case acc@NormalAccess(obj, application) =>
           traverseChildren(acc)
           checkValidUse(obj, knowledge)
+          application match {
+            case MethodCall(meth, args) =>
+              meth.getSymbol.argList.zip(args).foreach { case (expectedArg, arg) =>
+                if (!expectedArg.getType.isNullable && arg.getType.isNullable) {
+                  checkValidUse(arg, knowledge)
+                }
+              }
+            case _                      =>
+          }
         case assign@Assign(obj, from)           =>
           traverse(from)
           obj match {
@@ -300,7 +309,7 @@ case class MethodFlowAnalyzer(
         case binOp@BinaryOperatorTree(lhs, rhs) =>
           traverse(lhs)
           traverse(rhs)
-          binOp ifInstanceOf[Div] { _ =>
+          binOp ifInstanceOf[Div] { _: Div =>
             knowledge.getNumericValue(rhs) ifDefined { v => if (v == 0) report(DivideByZero(rhs.toString, binOp)) }
           }
           binOp match {
