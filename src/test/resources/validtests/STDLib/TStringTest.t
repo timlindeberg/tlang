@@ -260,16 +260,20 @@ println(String.ValueOf(["a", "b", "c"])) // res: "[a, b, c]"
 println(String.ValueOf(['a', 'b', 'c'])) // res: "[a, b, c]"
 println(String.ValueOf([new A(), new A(), new A()])) // res: "[ObjectA, ObjectA, ObjectA]"
 
-// TODO: FIX
-// ValueOf for nullable types
-// nullableInt = null
-// nullableA = null
-// println(String.ValueOf(nullableInt)) // res: null
-// println(String.ValueOf(nullableA)) // res: null
-// nullableInt = 5
-// nullableA = new A()
-// println(String.ValueOf(nullableInt)) // res: 5
-// println(String.ValueOf(nullableA)) // res: ObjectA
+nullableInt = 5
+nullableA = new A()
+println(String.ValueOf(nullableInt)) // res: 5
+println(String.ValueOf(nullableA)) // res: ObjectA
+
+var nullableObject: Object? = GetObject()
+
+println(String.ValueOf(nullableObject)) // res: 5
+nullableObject = GetNull()
+
+println(String.ValueOf(nullableObject)) // res: null
+
+Def GetObject(): Object? = 5
+Def GetNull(): Object? = null
 
 class A =
 	Def toString() = "ObjectA"
