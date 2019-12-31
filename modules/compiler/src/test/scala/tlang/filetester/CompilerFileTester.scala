@@ -50,18 +50,18 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
         return
     }
 
-    if (ctx.reporter.hasWarnings && expectedCodes.nonEmpty) {
-      verifyErrorCodes(ctx.reporter.messages, MessageType.Warning, expectedCodes)
-      return
+    if (ctx.reporter.hasWarnings) {
+      printMessages(ctx.reporter.messages)
+      if (expectedCodes.nonEmpty) {
+        verifyErrorCodes(ctx.reporter.messages, MessageType.Warning, expectedCodes)
+        return
+      }
     }
 
     if (expectedCodes.nonEmpty) {
       solutionVerifier(IndexedSeq(), expectedCodes, colorContent = true)
       return
     }
-
-    if (ctx.reporter.hasErrors)
-      fail("Compilation failed")
 
     val cus = getCUs(result)
     cus foreach verifyTree
@@ -102,16 +102,12 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
   }
 
   private def handleCompilationException(messages: CompilerMessages, expectedCodes: IndexedSeq[Solution]): Unit = {
-    val messageContext = ctx.options(MessageContextFlag)
     if (expectedCodes.isEmpty) {
-      val errors = ErrorMessageOutput(messages, messageContext).pretty
+      val errors = ErrorMessageOutput(messages, ctx.options(MessageContextFlag)).pretty
       fail("Compilation failed:", errors)
     }
 
-    if (options(VerboseFlag)) {
-      ctx.output += ErrorMessageOutput(messages, messageContext, List(MessageType.Error))
-    }
-
+    printMessages(messages)
     verifyErrorCodes(messages, MessageType.Error, expectedCodes)
   }
 
@@ -174,6 +170,13 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
         invalidTree(tree, "position")
       }
     }
+  }
+
+  private def printMessages(messages: CompilerMessages): Unit = {
+    if (!options(VerboseFlag))
+      return
+    val messageContext = ctx.options(MessageContextFlag)
+    ctx.output += ErrorMessageOutput(messages, messageContext)
   }
 
   private def fail(reason: String, extraBoxes: String*): Nothing = {
