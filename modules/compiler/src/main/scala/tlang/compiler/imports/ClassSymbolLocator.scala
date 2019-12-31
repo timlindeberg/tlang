@@ -275,39 +275,8 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     if (name.head == '$') OperatorTypes.get(name.drop(1)) else None
   }
 
-  private def lazySymbol(name: String) = {
-    SymbolCache.getOrElseUpdate(name, new LazyClassSymbol(name))
-  }
-
-  private class LazyClassSymbol(override val name: String) extends ClassSymbol(name) {
-
-    var loaded = false
-
-    override def methods: List[MethodSymbol] = {
-      loadClassSymbol()
-      _methods
-    }
-
-    override def operators: List[OperatorSymbol] = {
-      loadClassSymbol()
-      _operators
-    }
-
-    override def fields: Map[String, FieldSymbol] = {
-      loadClassSymbol()
-      _fields
-    }
-
-    override def isAbstract: Boolean = {
-      loadClassSymbol()
-      _isAbstract
-    }
-
-    private def loadClassSymbol(): Unit =
-      if (!loaded) {
-        fillClassSymbol(this)
-        loaded = true
-      }
+  private def lazySymbol(name: String): ClassSymbol = {
+    SymbolCache.getOrElseUpdate(name, new LazyClassSymbol(this, name))
   }
 
 }
