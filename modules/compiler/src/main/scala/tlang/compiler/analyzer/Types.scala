@@ -39,18 +39,18 @@ object Types {
   val ExtensionClassAnnotationSymbol = new ClassSymbol(TExtensionClassAnnotation)
   val ImplicitConstructorAnnotationSymbol = new ClassSymbol(TImplicitConstructorAnnotation)
 
-  val Int = TObject(IntSymbol)
-  val Long = TObject(LongSymbol)
-  val Float = TObject(FloatSymbol)
-  val Double = TObject(DoubleSymbol)
-  val Char = TObject(CharSymbol)
-  val Bool = TObject(BoolSymbol)
-  val Object = TObject(ObjectSymbol)
-  val String = TObject(StringSymbol)
-  val Array = TArray(Object)
-  val ExtensionMethodAnnotation = TObject(ExtensionMethodAnnotationSymbol)
-  val ExtensionClassAnnotation = TObject(ExtensionClassAnnotationSymbol)
-  val ImplicitConstructorAnnotation = TObject(ImplicitConstructorAnnotationSymbol)
+  val Int: TObject = TObject(IntSymbol)
+  val Long: TObject = TObject(LongSymbol)
+  val Float: TObject = TObject(FloatSymbol)
+  val Double: TObject = TObject(DoubleSymbol)
+  val Char: TObject = TObject(CharSymbol)
+  val Bool: TObject = TObject(BoolSymbol)
+  val Object: TObject = TObject(ObjectSymbol)
+  val String: TObject = TObject(StringSymbol)
+  val Array: TArray = TArray(Object)
+  val ExtensionMethodAnnotation: TObject = TObject(ExtensionMethodAnnotationSymbol)
+  val ExtensionClassAnnotation: TObject = TObject(ExtensionClassAnnotationSymbol)
+  val ImplicitConstructorAnnotation: TObject = TObject(ImplicitConstructorAnnotationSymbol)
 
   val Primitives: List[TObject] = List(Int, Long, Float, Double, Char, Bool)
   val DefaultTypes: List[TObject] = Primitives ++ List(String, Object)
@@ -133,7 +133,7 @@ object Types {
   object TArray {
     def apply(tpe: Type) = new TArray(tpe)
     def apply(tpe: Type, isNullable: Boolean) = new TArray(tpe, isNullable)
-    def unapply(t: TArray) = Some(t.tpe)
+    def unapply(t: TArray): Option[Type] = Some(t.tpe)
   }
   class TArray(val tpe: Type, override val isNullable: Boolean = false) extends Type {
 
@@ -172,7 +172,7 @@ object Types {
   object TObject {
     def apply(classSymbol: ClassSymbol) = new TObject(classSymbol)
     def apply(classSymbol: ClassSymbol, isNullable: Boolean) = new TObject(classSymbol, isNullable)
-    def unapply(t: TObject) = Some(t.classSymbol)
+    def unapply(t: TObject): Option[ClassSymbol] = Some(t.classSymbol)
   }
   class TObject(val classSymbol: ClassSymbol, override val isNullable: Boolean = false) extends Type {
 

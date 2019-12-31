@@ -20,11 +20,11 @@ trait FlowingErrors extends ErrorHandling {
   abstract class FlowAnalysisWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
 
   case class AccessMightBeNull(v: String, override val pos: Positioned) extends FlowAnalysisError(0, pos) {
-    lazy val message = err"Cannot use nullable variable $v without first checking if it is null."
+    lazy val message = err"Cannot use nullable value $v without first checking if it is null."
   }
 
   case class AccessIsNull(v: String, override val pos: Positioned) extends FlowAnalysisError(1, pos) {
-    lazy val message = err"Cannot use nullable variable $v since it is known to be null."
+    lazy val message = err"Cannot use nullable value $v since it is known to be null."
   }
 
   case class AccessNullableMethod(meth: String, override val pos: Positioned) extends FlowAnalysisError(2, pos) {

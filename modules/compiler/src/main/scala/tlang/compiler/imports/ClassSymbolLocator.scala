@@ -191,7 +191,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
 
   private def convertArgument(tpe: BcelType, annotations: Array[AnnotationEntry], newName: String) = {
     val isNullable = containsAnnotation(annotations, Constants.TNullableAnnotation)
-    val modifiers: Set[Modifier] = Set(Private(), Final())
+    val modifiers = Set[Modifier](Private(), Final())
     val variableSymbol = new VariableSymbol(newName, modifiers).setType(convertType(tpe, isNullable))
     convertAnnotations(annotations) foreach variableSymbol.addAnnotation
     variableSymbol

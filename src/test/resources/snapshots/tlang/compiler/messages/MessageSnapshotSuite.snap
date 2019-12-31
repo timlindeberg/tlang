@@ -1,8 +1,8 @@
 ========================================= FlowingErrors AccessIsNull
-F2001: [1mCannot use nullable variable [35mABC[0m[1m since it is known to be null.[0m
+F2001: [1mCannot use nullable value [35mABC[0m[1m since it is known to be null.[0m
 
 ========================================= FlowingErrors AccessMightBeNull
-F2000: [1mCannot use nullable variable [35mABC[0m[1m without first checking if it is null.[0m
+F2000: [1mCannot use nullable value [35mABC[0m[1m without first checking if it is null.[0m
 
 ========================================= FlowingErrors AccessNullableMethod
 F2002: [1mCannot directly use result of method call [35mABC[0m[1m since it could be null.[0m

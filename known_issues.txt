@@ -14,12 +14,6 @@ Def Value() =
 	v
 The class Int does not define an operator Int + [untyped].
 
-- Ternary doesn't prove non nullableness:
-Def toString() = Task ? "(" + Task + ": " + FinishedAt + ")" : "Free"
-Errors on Task
-
-- Cannot add Nullable types to Strings.
-
 - Array comparison should use Arrays.equals
 
 - Unreachable code warning is weird for larger code blocks
