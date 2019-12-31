@@ -44,15 +44,45 @@ Def BothPaths2() =
 	if(a == 5)
 		if(a == 4)
 			return
-			println(a)  // res: F1000
+			println(a) // res: F1000
 		else
 			return // res: F1002
 			println(a)  // res: F1000
 	else
 		if(a == 4) // res: F1002
 			return
-			println(a)  // res: F1000
+			println(a) // res: F1000
 		else
 			return // res: F1002
-			println(a)  // res: F1000
+			println(a) // res: F1000
 	println(a) // res: F1000
+
+Def BigCodeBlock() =
+	val a = 5
+	return
+	if(a == 5) // res: F1000
+		return
+		if(a == 4)
+			return
+			println(a)
+		else
+			println(a)
+	else
+		if(a == 4)
+			println(a)
+		else
+			println(a)
+	return
+	println(a)
+
+Def BigCodeBlock2() =
+	val a = 5
+	if(a == 4)
+		return
+	else
+		return // res: F1002
+	println(a) // res: F1000
+	if(a == 4)
+		println(a)
+	else
+		println(a)

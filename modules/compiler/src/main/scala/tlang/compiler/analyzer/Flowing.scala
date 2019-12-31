@@ -113,14 +113,17 @@ case class MethodFlowAnalyzer(
     trace"Analyzing ${ tree.toString.stripNewlines.trim } at line ${ tree.line } with knowledge: $knowledge"
     tree match {
       case Block(stats)                      =>
-        val endKnowledge = stats.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }
+        val endKnowledge = stats.foldLeft(knowledge) { (currentKnowledge, next) =>
+          val hasFlowEnded = currentKnowledge.flowEnded.isEmpty
+          if (hasFlowEnded) analyze(next, currentKnowledge) else currentKnowledge
+        }
         endKnowledge.flowEnded match {
           case Some(stat) if stat != stats.last =>
             val index = stats.indexOf(stat)
             val startStat = stats(index + 1)
             val endStat = stats.last
             val pos = Block(Nil).setPos(startStat, endStat)
-            report(DeadCode(startStat.line, endStat.line, pos))
+            report(DeadCode(startStat.line, endStat.lineEnd, pos))
           case _                                =>
         }
         endKnowledge

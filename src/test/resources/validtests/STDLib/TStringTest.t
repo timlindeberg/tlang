@@ -260,6 +260,7 @@ println(String.ValueOf(["a", "b", "c"])) // res: "[a, b, c]"
 println(String.ValueOf(['a', 'b', 'c'])) // res: "[a, b, c]"
 println(String.ValueOf([new A(), new A(), new A()])) // res: "[ObjectA, ObjectA, ObjectA]"
 
+// ValueOf for nullable types
 nullableInt = 5
 nullableA = new A()
 println(String.ValueOf(nullableInt)) // res: 5

@@ -16,6 +16,4 @@ The class Int does not define an operator Int + [untyped].
 
 - Array comparison should use Arrays.equals
 
-- Unreachable code warning is weird for larger code blocks
-
 - Cast to nullable fails with CodeFreezingException
