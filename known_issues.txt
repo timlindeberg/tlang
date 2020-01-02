@@ -3,5 +3,3 @@
 - Even though i is updated in the loop:
  1210:3 src\test\resources\validtests\Advent Of Code 2018\Day4\Day4Star1.t    │
 │ Indexing expression id is out of bounds: -1 < 0.     
-
-- Array comparison should use Arrays.equals
