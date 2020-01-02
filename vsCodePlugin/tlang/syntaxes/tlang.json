@@ -25,7 +25,7 @@
         {"include": "#import"},
         {"include": "#package"},
         {"include": "#typeList"},
-        {"include": "#new"},
+        {"include": "#newIsAs"},
         {"include": "#classDeclaration"},
         {"include": "#funcDeclaration"},
         {"include": "#annotation"},
@@ -131,8 +131,8 @@
         {"include": "$self"}
       ]
     },
-    "new": {
-      "match": "(new) +([a-zA-Z_][0-9a-zA-Z_]*)",
+    "newIsAs": {
+      "match": "(new|is|as) +([a-zA-Z_][0-9a-zA-Z_]*)",
       "captures": {
         "1": {"name": "keyword.tlang"},
         "2": {"name": "entity.name.class.tlang"}
