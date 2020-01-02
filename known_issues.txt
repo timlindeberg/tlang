@@ -5,5 +5,3 @@
 │ Indexing expression id is out of bounds: -1 < 0.     
 
 - Array comparison should use Arrays.equals
-
-- Cast to nullable fails with CodeFreezingException
