@@ -4,16 +4,6 @@
  1210:3 src\test\resources\validtests\Advent Of Code 2018\Day4\Day4Star1.t    │
 │ Indexing expression id is out of bounds: -1 < 0.     
 
-- Logs error with [untyped]:
-Def Value() =
-	var v = 0
-	if(Children.Size() == 0)
-		for(val m in MetaData) v += m
-	else
-		for(val m in MetaData) v += Children[m].Value()
-	v
-The class Int does not define an operator Int + [untyped].
-
 - Array comparison should use Arrays.equals
 
 - Cast to nullable fails with CodeFreezingException

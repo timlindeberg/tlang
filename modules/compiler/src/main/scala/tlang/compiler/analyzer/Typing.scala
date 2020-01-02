@@ -63,7 +63,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
 
         method.annotations foreach { typeChecker.typeCheckAnnotation }
         method.args.flatMap(_.annotations) foreach { typeChecker.typeCheckAnnotation }
-        
+
         typeChecker.typeCheckMethod()
       }
   }
@@ -108,6 +108,7 @@ case class TypeChecker(
 
     if (currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)) {
       report(CantInferTypeRecursiveMethod(currentMethodSymbol))
+      currentMethodSymbol.setType(TError)
       return
     }
 
