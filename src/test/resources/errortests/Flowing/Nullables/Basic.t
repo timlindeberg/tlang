@@ -14,6 +14,9 @@ GetA().Test() // res: F2002
 a.Test() // res: F2000
 println(a + b) // res: F2000, F2000
 
+var bool = a && a.b
+bool = !a || a.b
+
 if(a != null && b != null)
 	println(a + b)
 	println(a < b)

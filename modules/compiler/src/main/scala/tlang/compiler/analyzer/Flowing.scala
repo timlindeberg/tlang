@@ -289,6 +289,13 @@ case class MethodFlowAnalyzer(
               }
             case _                      =>
           }
+        case And(lhs, rhs)                      =>
+          val lhsKnowledge = analyzeCondition(lhs, knowledge)
+          analyzeExpr(rhs, lhsKnowledge)
+        case Or(lhs, rhs)                       =>
+          val lhsKnowledge = analyzeCondition(lhs, knowledge)
+          val inverted = knowledge + (lhsKnowledge - knowledge).invert
+          analyzeExpr(rhs, inverted)
         case assign@Assign(obj, from)           =>
           traverse(from)
           obj match {
