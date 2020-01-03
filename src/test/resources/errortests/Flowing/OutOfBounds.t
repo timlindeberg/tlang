@@ -54,5 +54,40 @@ println(a[2])
 a = new Int['q' - 'a']
 println(a['q'])  // res: F2004
 
+a = [1, 2, 3]
+i = 5
+while(true)
+	println(a[i]) // res: F2004
+
+for(;;)
+	if (j > 0)
+		i = GetInt()
+	println(a[i])
+
+// Could have been reassigned in the loop
+while(true)
+	println(a[i])
+
+i = 5
+while(true)
+	println(a[i]) // res: F2004
+
+while(true)
+	for(val x in [1, 2, 3])
+		if(x > GetInt())
+			i = GetInt()
+	println(a[i])
+
+for(i = -1; i < GetInt(); i++)
+	println(a[i]) // res: F2004
+
+Def GetInt() = 25
 
 Def GetArr() = return [ 1, 2, 3, 4, 5 ]
+
+class A =
+	var x: Int = 5
+
+	Def Test() =
+		val a = [1, 2, 3]
+		println(a[x])
