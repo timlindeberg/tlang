@@ -26,7 +26,6 @@ for(var i = 0; i < 5; i++)
 for(var i = 0; i < 5; i++)
 	println(a[i])    // res: 0, 1, 2, 3, 4
 
-
 class A =
 
 	var int: Int

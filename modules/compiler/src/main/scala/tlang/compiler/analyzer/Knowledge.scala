@@ -60,6 +60,8 @@ object Knowledge {
     override def toString = s"$id[$index]"
   }
 
+  trait PermanentKnowledge
+
   trait VarKnowledge {
     def invert: VarKnowledge = this
   }
@@ -79,29 +81,22 @@ object Knowledge {
   case class MaybeKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper
 
   // These should be objects but then it doesnt work as type parameters
-  class Initialized extends VarKnowledge {override def toString = "Initialized" }
-  class Used extends VarKnowledge {override def toString = "Used" }
+  class Initialized extends VarKnowledge with PermanentKnowledge {override def toString = "Initialized" }
+  class Used extends VarKnowledge with PermanentKnowledge {override def toString = "Used" }
   val Initialized = new Initialized
   val Used = new Used
 
-  case class Reassigned(at: StatTree) extends VarKnowledge {override def toString = s"Reassigned(${ at.line }:${ at.col })" }
+  case class Reassigned(at: StatTree) extends VarKnowledge with PermanentKnowledge {override def toString = s"Reassigned(${ at.line }:${ at.col })" }
   case class IsNull(value: Boolean) extends VarKnowledge {override def invert = IsNull(!value) }
   case class ArraySize(size: Long) extends VarKnowledge
   case class NumericValue(value: Long) extends VarKnowledge
   case class BoolValue(condition: ExprTree) extends VarKnowledge
 
-  // TODO: Ranges?
   case class Greater(value: Long) extends VarKnowledge {
-    override def invert = LessEq(value)
-  }
-  case class GreaterEq(value: Long) extends VarKnowledge {
-    override def invert = Less(value)
+    override def invert = Less(value + 1)
   }
   case class Less(value: Long) extends VarKnowledge {
-    override def invert = GreaterEq(value)
-  }
-  case class LessEq(value: Long) extends VarKnowledge {
-    override def invert = Greater(value)
+    override def invert = Greater(value - 1)
   }
 
   case class Knowledge(varKnowledge: Map[Identifier, Set[VarKnowledge]] = Map(),
@@ -166,8 +161,33 @@ object Knowledge {
           return this
         }
       }
-      val knowledge = varKnowledge.getOrElse(varId, Set()).filterNotInstance[T] + newKnowledge
-      copy(varKnowledge = varKnowledge + (varId -> knowledge))
+      val knowledge = varKnowledge.getOrElse(varId, Set())
+      val filtered = knowledge.filter { oldKnowledge => !shouldBeReplaced(oldKnowledge, newKnowledge) }
+      copy(varKnowledge = varKnowledge + (varId -> (filtered + newKnowledge)))
+    }
+
+    def shouldBeReplaced[T <: VarKnowledge : ClassTag](oldKnowledge: VarKnowledge, newKnowledge: T): Boolean = {
+      val old = unwrap(oldKnowledge)
+      val ne = unwrap(newKnowledge)
+      ne match {
+        case _: NumericValue      => old match {
+          case _: NumericValue => true
+          case _: Less         => true
+          case _: Greater      => true
+          case _               => false
+        }
+        case Greater(greaterThan) => old match {
+          case NumericValue(v) => v <= greaterThan
+          case Less(lessThan)  => greaterThan > lessThan
+          case _               => false
+        }
+        case Less(lessThan)       => old match {
+          case NumericValue(v)      => v >= lessThan
+          case Greater(greaterThan) => lessThan < greaterThan
+          case _                    => false
+        }
+        case _                    => ne.getClass == old.getClass
+      }
     }
 
     def getMaybe[T <: VarKnowledge : ClassTag](varId: Identifier): Option[T] = {
@@ -236,6 +256,12 @@ object Knowledge {
     def addOrKnowledge(from: Knowledge): Knowledge = addWrapped(from, OrKnowledge)
     def addAndKnowledge(from: Knowledge): Knowledge = addWrapped(from, AndKnowledge)
 
+    def removeNonPermanentKnowledge(identifier: Identifier): Knowledge = {
+      val oldKnowledge = varKnowledge.getOrElse(identifier, Set())
+      val newKnowledge = oldKnowledge.filter { _.isInstanceOf[PermanentKnowledge] }
+      copy(varKnowledge = varKnowledge + (identifier -> newKnowledge))
+    }
+
     def filterReassignedVariables(branch: StatTree, afterBranch: Knowledge): Knowledge = {
       val gainedKnowledge = afterBranch - this
       val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]() ++ varKnowledge
@@ -294,17 +320,16 @@ object Knowledge {
     }
 
     private def addWrapped[T <: VarKnowledgeWrapper : ClassTag](from: Knowledge, cons: VarKnowledge => T) = {
-      val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
-      from.varKnowledge.foreach { case (varId, vKnowledge) =>
-        val v = varKnowledge.getOrElse(varId, Set())
-        val wrapped = vKnowledge map {
-          case k: VarKnowledgeWrapper => k
-          case k if v.contains(k)     => k
-          case k                      => cons(k)
+      from.varKnowledge.foldLeft(this) { (knowledge, entry) =>
+        val (varId, varKnowledge) = entry
+        varKnowledge.foldLeft(knowledge) { (knowledge, newKnowledge) =>
+          val k = newKnowledge match {
+            case k: VarKnowledgeWrapper => k
+            case k                      => cons(k)
+          }
+          knowledge.add(varId, k)
         }
-        newKnowledge += varId -> (v ++ wrapped)
       }
-      copy(varKnowledge = varKnowledge ++ newKnowledge)
     }
 
     private def getAccessIdentifier(access: Access): Option[Identifier] = {
@@ -421,6 +446,11 @@ object Knowledge {
         case Some(ended) => NL + s"Flow ended at ${ ended.line }: $ended"
         case None        => ""
       }
+    }
+
+    private def unwrap(varKnowledge: VarKnowledge) = varKnowledge match {
+      case v: VarKnowledgeWrapper => v.inner
+      case x                      => x
     }
   }
 

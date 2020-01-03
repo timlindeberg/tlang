@@ -14,6 +14,8 @@ import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.{Logging, Positioned}
 
+import scala.collection.mutable.ListBuffer
+
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
@@ -57,7 +59,8 @@ case class ClassFlowAnalyser(
   def analyzeField(knowledge: Knowledge, field: VarDecl): Knowledge = {
     val sym = field.getSymbol
     val varId = VarIdentifier(sym)
-    knowledge.assignment(varId, field.initiation)
+    val fieldKnowledge = knowledge.assignment(varId, field.initiation)
+    if (sym.isFinal) fieldKnowledge else fieldKnowledge.removeNonPermanentKnowledge(varId)
   }
 
   def analyzeMethod(meth: MethodDeclTree, fieldKnowledge: Knowledge): Knowledge = {
@@ -136,7 +139,8 @@ case class MethodFlowAnalyzer(
           case None           => knowledge.assignment(varId, None)
         }
       case For(init, condition, post, stat)  =>
-        val afterInit = init.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }
+        val knowledgeInLoop = getKnowledgeInLoop(knowledge, stat)
+        val afterInit = init.foldLeft(knowledgeInLoop) { (currentKnowledge, next) => analyze(next, currentKnowledge) }
         val afterCondition = analyzeCondition(condition, afterInit)
         val afterStat = analyze(stat, afterCondition)
 
@@ -146,7 +150,8 @@ case class MethodFlowAnalyzer(
         analyzeExpr(container, knowledge)
         checkValidUse(container, knowledge)
         val varId = VarIdentifier(varDecl.id.getSymbol)
-        val varDeclKnowledge = knowledge.assignment(varId, None, Initialized)
+        val knowledgeInLoop = getKnowledgeInLoop(knowledge, stat)
+        val varDeclKnowledge = knowledgeInLoop.assignment(varId, None, Initialized)
         val afterStat = analyze(stat, varDeclKnowledge)
         knowledge.filterReassignedVariables(tree, afterStat)
       case If(condition, thn, els)           =>
@@ -183,7 +188,8 @@ case class MethodFlowAnalyzer(
               knowledge.filterReassignedVariables(tree, thnKnowledge)
         }
       case While(condition, stat)            =>
-        val afterCondition = analyzeCondition(condition, knowledge)
+        val knowledgeInLoop = getKnowledgeInLoop(knowledge, stat)
+        val afterCondition = analyzeCondition(condition, knowledgeInLoop)
         val afterWhile = analyze(stat, afterCondition)
         knowledge.filterReassignedVariables(tree, afterWhile)
       case PrintStatTree(expr)               =>
@@ -265,6 +271,30 @@ case class MethodFlowAnalyzer(
       analyzeComparison(comp, knowledge)
     case _                               =>
       analyzeExpr(tree, knowledge)
+  }
+
+  private def getKnowledgeInLoop(knowledge: Knowledge, stat: StatTree): Knowledge = {
+    val assignedInLoop = getReassignedVariables(knowledge, stat)
+    assignedInLoop.foldLeft(knowledge) { (knowledge, id) =>
+      knowledge.removeNonPermanentKnowledge(id)
+    }
+  }
+
+  private def getReassignedVariables(knowledge: Knowledge, stat: StatTree): List[Identifier] = {
+    val identifiers = ListBuffer[Identifier]()
+
+    def addIdentifier(obj: ExprTree): Unit = {
+      knowledge.getIdentifier(obj) ifDefined { identifiers += _ }
+    }
+
+    val traverser = new Trees.Traverser {
+      def traversal: TreeTraversal = {
+        case Assign(obj, _)                 => addIdentifier(obj)
+        case incDec: IncrementDecrementTree => addIdentifier(incDec.expr)
+      }
+    }
+    traverser(stat)
+    identifiers.toList
   }
 
   def analyzeExpr(tree: ExprTree, topKnowledge: Knowledge): Knowledge = {
@@ -362,20 +392,19 @@ case class MethodFlowAnalyzer(
         case arrOp@ArrayOperatorTree(arr)       =>
           traverse(arr)
 
-          // TODO: This currently doesn't work properly in loops
-          //          arrOp match {
-          //            case arrRead@ArrayRead(_, index) =>
-          //              knowledge.getNumericValue(index) ifDefined { value =>
-          //                if (value < 0)
-          //                  report(OutOfBounds(index.toString, value, 0, arrRead))
-          //                else
-          //                  getArraySize(arr, knowledge) ifDefined { size =>
-          //                    if (value >= size)
-          //                      report(OutOfBounds(index.toString, value, size - 1, arrRead))
-          //                  }
-          //              }
-          //            case _                           =>
-          //          }
+          arrOp match {
+            case arrRead@ArrayRead(_, index) =>
+              knowledge.getNumericValue(index) ifDefined { value =>
+                if (value < 0)
+                  report(OutOfBounds(index.toString, value, 0, arrRead))
+                else
+                  getArraySize(arr, knowledge) ifDefined { size =>
+                    if (value >= size)
+                      report(OutOfBounds(index.toString, value, size - 1, arrRead))
+                  }
+              }
+            case _                           =>
+          }
           checkValidUse(arr, knowledge)
         case v: VariableID                      =>
           knowledge.getIdentifier(v) ifDefined { varId =>
@@ -398,17 +427,17 @@ case class MethodFlowAnalyzer(
     val lhs = comparison.lhs
     val rhs = comparison.rhs
     for ((a, b) <- List((lhs, rhs), (rhs, lhs))) {
-      knowledge.getIdentifier(a) ifDefined { varId =>
-        knowledge.getNumericValue(b) ifDefined { numericValue =>
+      (knowledge.getIdentifier(a), knowledge.getNumericValue(b)) match {
+        case (Some(varId), Some(numericValue)) =>
           val newKnowledge = comparison match {
             case _: LessThan          => Less(numericValue)
-            case _: LessThanEquals    => LessEq(numericValue)
+            case _: LessThanEquals    => Less(numericValue + 1)
             case _: GreaterThan       => Greater(numericValue)
-            case _: GreaterThanEquals => GreaterEq(numericValue)
+            case _: GreaterThanEquals => Greater(numericValue - 1)
             case _: Equals            => NumericValue(numericValue)
           }
           return knowledge.add(varId, newKnowledge)
-        }
+        case _                                 =>
       }
     }
     knowledge

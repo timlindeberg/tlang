@@ -1,6 +1,3 @@
-// Ignore
-// TODO: Fix out of bounds checking
-
 var a = new Int[5]
 println(a[-1]) // res: F2004
 
@@ -80,6 +77,24 @@ while(true)
 
 for(i = -1; i < GetInt(); i++)
 	println(a[i]) // res: F2004
+
+for(i = -1; i < GetInt(); i++)
+	if(i > 5)
+		println(a[i])
+
+val x = 50
+a = new Int[5]
+
+for(var i = 0; i < GetInt(); i++)
+	val number = -x + i
+	val v = number >= 0 && number <= 5 && a[number] == '#'
+	println(v)
+
+for(var i = 0; i < GetInt(); i++)
+	val number = -x + i
+	val b = number < 0 || number > 25
+	val v = !b && a[number] == '#'
+	println(v)
 
 Def GetInt() = 25
 

@@ -6,10 +6,8 @@ Def MoreTests(b: A?) =
 	else
 		a.Test() // res: F2001
 
-
 	if(a.b) // res: F2000
 		println()
-
 
 	if(a != null && a.b)
 		println()

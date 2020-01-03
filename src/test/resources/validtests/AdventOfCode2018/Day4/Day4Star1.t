@@ -1218,7 +1218,7 @@ Def GetEvents(input: String) =
 
 Def GetSleepyTimes(events: Vector<Event>) =
 	val times = new HashMap<Int, Long>()
-	var id = 0
+	var id = -1
 	var start = new Date(0)
 	for(val event in events)
 		if(event.EventType is Begins)
