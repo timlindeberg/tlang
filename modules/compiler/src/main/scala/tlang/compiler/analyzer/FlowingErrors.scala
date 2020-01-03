@@ -5,6 +5,8 @@ package analyzer
 import tlang.compiler.messages.{ErrorHandling, ErrorMessage, ExtraMessage, WarningMessage}
 import tlang.utils.Positioned
 
+import scala.collection.immutable.NumericRange
+
 trait FlowingErrors extends ErrorHandling {
 
   def report(error: ErrorMessage): Unit = reporter.report(error)
@@ -35,11 +37,19 @@ trait FlowingErrors extends ErrorHandling {
     lazy val message = err"Division by expression $zeroExpr is illegal since it is known to have the value ${ 0 }."
   }
 
-  case class OutOfBounds(index: String, value: Long, size: Long, override val pos: Positioned) extends FlowAnalysisError(4, pos) {
-    lazy val message: String = {
+  object OutOfBounds {
+    def apply(index: String, value: Long, size: Long, pos: Positioned): OutOfBounds = {
       val bounds = if (value < 0) s"$value < 0" else s"$value > $size"
-      err"Indexing expression $index is out of bounds: $bounds."
+      OutOfBounds(index, err"$bounds", pos)
     }
+    def apply(index: String, range: NumericRange[Long], size: Long, pos: Positioned): OutOfBounds = {
+      val bounds = err"size $size is not in range ${ range.min }..${ range.max }"
+      OutOfBounds(index, bounds, pos)
+    }
+  }
+
+  case class OutOfBounds(index: String, bounds: String, override val pos: Positioned) extends FlowAnalysisError(4, pos) {
+    lazy val message: String = err"Indexing expression $index is out of bounds: " + bounds
   }
 
   case class ReassignmentToVal(value: String, override val pos: Positioned) extends FlowAnalysisError(5, pos) {

@@ -206,14 +206,16 @@ object Knowledge {
     def get[T <: VarKnowledge : ClassTag](knowledge: Set[VarKnowledge]): Option[T] = {
       knowledge.findInstance[T] match {
         case Some(x) => Some(x)
-        case None    => knowledge.findInstance[AndKnowledge] flatMap {
-          case AndKnowledge(x) =>
-            if (classTag[T].runtimeClass.isInstance(x))
-              Some(x.asInstanceOf[T])
-            else
-              None
-          case _               => None
-        }
+        case None    =>
+          knowledge
+            .filterInstance[AndKnowledge]
+            .findDefined { andKnowledge =>
+              val inner = andKnowledge.inner
+              if (classTag[T].runtimeClass.isInstance(inner))
+                Some(inner.asInstanceOf[T])
+              else
+                None
+            }
       }
     }
 

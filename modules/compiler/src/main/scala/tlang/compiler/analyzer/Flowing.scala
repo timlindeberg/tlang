@@ -391,20 +391,7 @@ case class MethodFlowAnalyzer(
           }
         case arrOp@ArrayOperatorTree(arr)       =>
           traverse(arr)
-
-          arrOp match {
-            case arrRead@ArrayRead(_, index) =>
-              knowledge.getNumericValue(index) ifDefined { value =>
-                if (value < 0)
-                  report(OutOfBounds(index.toString, value, 0, arrRead))
-                else
-                  getArraySize(arr, knowledge) ifDefined { size =>
-                    if (value >= size)
-                      report(OutOfBounds(index.toString, value, size - 1, arrRead))
-                  }
-              }
-            case _                           =>
-          }
+          checkArrayBounds(arrOp, knowledge)
           checkValidUse(arr, knowledge)
         case v: VariableID                      =>
           knowledge.getIdentifier(v) ifDefined { varId =>
@@ -499,6 +486,37 @@ case class MethodFlowAnalyzer(
 
           verifyVariableInitialized(varId, obj, knowledge)
         }
+    }
+  }
+
+  private def checkArrayBounds(arrOp: ArrayOperatorTree, knowledge: Knowledge): Unit = {
+    arrOp match {
+      case arrRead@ArrayRead(_, index) =>
+        val arraySize = getArraySize(arrOp.arr, knowledge)
+        knowledge.getNumericValue(index) ifDefined { value =>
+          if (value < 0)
+            report(OutOfBounds(index.toString, value, 0, arrRead))
+          else
+            arraySize ifDefined { size =>
+              if (value >= size)
+                report(OutOfBounds(index.toString, value, size - 1, arrRead))
+            }
+        }
+      // TODO: Should we check ranges?
+      //        arraySize ifDefined { size =>
+      //          knowledge.getIdentifier(index) ifDefined { varId =>
+      //            val less = knowledge.get[Less](varId)
+      //            val greater = knowledge.get[Greater](varId)
+      //            (less, greater) match {
+      //              case (Some(Less(lessThan)), Some(Greater(greaterThan))) =>
+      //                val range = (greaterThan + 1) to (lessThan - 1)
+      //                if (size - 1 notIn range)
+      //                  report(OutOfBounds(index.toString, range, size, arrRead))
+      //              case _                                                  =>
+      //            }
+      //          }
+      //        }
+      case _ =>
     }
   }
 
