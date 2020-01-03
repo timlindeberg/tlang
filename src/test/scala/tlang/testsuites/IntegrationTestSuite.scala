@@ -5,14 +5,12 @@ import better.files._
 import org.scalatest.{BeforeAndAfterAll, Suites}
 import tlang.compiler.analyzer.OperatorTypeSpec
 import tlang.compiler.ast.PrettyPrinterSpec
-import tlang.compiler.messages.MessageSnapshotSuite
 import tlang.compiler.{CompilerErrorsSuite, PositionSuite, ValidProgramsSuite}
 import tlang.repl.ReplIntegrationSpec
 
 class IntegrationTestSuite extends Suites(
   new CompilerErrorsSuite,
   new ValidProgramsSuite,
-  new MessageSnapshotSuite,
   new PositionSuite,
   new PrettyPrinterSpec,
   new ReplIntegrationSpec,
