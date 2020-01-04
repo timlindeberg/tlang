@@ -22,8 +22,7 @@
     "code": {
       "patterns": [
         {"include": "#comment"},
-        {"include": "#import"},
-        {"include": "#package"},
+        {"include": "#importAndPackage"},
         {"include": "#typeList"},
         {"include": "#newIsAs"},
         {"include": "#classDeclaration"},
@@ -196,9 +195,9 @@
         "2": {"name": "entity.name.class.tlang"}
       }
     },
-    "import": {
-      "begin": "import",
-      "end": "\n",
+    "importAndPackage": {
+      "begin": "import|package",
+      "end": "//|\n",
       "beginCaptures": {
         "0": {"name": "keyword.tlang"}
       },
@@ -207,21 +206,8 @@
           "match": "::",
           "name": "keyword.operator.tlang"
         },
-        {"include": "#variable"}
-      ]
-    },
-    "package": {
-      "begin": "package",
-      "end": "\n",
-      "beginCaptures": {
-        "0": {"name": "keyword.tlang"}
-      },
-      "patterns": [
-        {
-          "match": "::",
-          "name": "keyword.operator.tlang"
-        },
-        {"include": "#variable"}
+        {"include": "#variable"},
+        {"include": "#comment"}
       ]
     }
   }
