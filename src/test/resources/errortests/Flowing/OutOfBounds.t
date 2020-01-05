@@ -96,8 +96,6 @@ for(var i = 0; i < GetInt(); i++)
 	val v = !b && a[number] == '#'
 	println(v)
 
-a = new Int[5]
-
 for(var i = -1; i < 5; i++)
 	println(a[i]) // res: F2004
 
