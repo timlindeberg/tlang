@@ -52,6 +52,7 @@ object TestFileMain extends Logging {
 
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
+    Logging.DefaultLogSettings.timeFormat = _date => ""
 
     val ctx = createContext(options)
     TestFileMain(ctx).run()
