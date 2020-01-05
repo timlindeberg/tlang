@@ -44,6 +44,8 @@ object Constants {
 
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
+  val ErrorName = "$ERROR"
+
   lazy val Version: String = readVersion()
   lazy val THomeDirectory: String = sys.env.getOrElse(THome, FatalCantFindTHome)
   lazy val TStdLibDirectory: String = tStdLibDirectory

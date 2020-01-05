@@ -255,7 +255,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     )
 
     // No fields
-    a[CompilationException] should be thrownBy parser(
+    a[ParsingException] should be thrownBy parser(
       EXTENSION, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVVAR, ID("x"), NEWLINE, DEDENT
     ).extensionDeclaration(Nil)
   }
@@ -1028,13 +1028,13 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       // as Double
       var p = parser(INTLIT(1), NEWLINE, AS, ID("Double"))
       p.expression shouldBe IntLit(1)
-      a[CompilationException] should be thrownBy p.expression
+      a[ParsingException] should be thrownBy p.expression
 
       // 1
       // * 2
       p = parser(INTLIT(1), NEWLINE, TIMES, INTLIT(2))
       p.expression shouldBe IntLit(1)
-      a[CompilationException] should be thrownBy p.expression
+      a[ParsingException] should be thrownBy p.expression
     }
   }
 
@@ -1329,7 +1329,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     ).classType shouldBe ClassID("A", List(ClassID("B"), ClassID("C"), ClassID("D")))
 
     // A<B<C>
-    a[CompilationException] should be thrownBy parser(ID("A"), LESSTHAN, ID("B"), LESSTHAN, ID("C"), GREATERTHAN).classType
+    a[ParsingException] should be thrownBy parser(ID("A"), LESSTHAN, ID("B"), LESSTHAN, ID("C"), GREATERTHAN).classType
   }
 
   it should "parse a formal" in {

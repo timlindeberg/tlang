@@ -47,7 +47,7 @@ case class TokenStream(tokenList: Seq[Token]) {
    * Handles generics having multiple ">" signs by
    * replacing an RSHIFT (>>) with two ">".
    */
-  def useRShiftAsTwoGreaterThan(): Unit = {
+  def useRightShiftAsTwoGreaterThan(): Unit = {
     assert(next.kind == RSHIFT)
 
     val firstPos = Position(next)

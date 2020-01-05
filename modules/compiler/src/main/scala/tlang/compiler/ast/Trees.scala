@@ -8,7 +8,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.Formatter
-import tlang.utils.{FillTreeHelpers, Positioned}
+import tlang.utils.{CanHaveError, FillTreeHelpers, Positioned}
 
 import scala.collection.{TraversableLike, mutable}
 
@@ -18,7 +18,11 @@ object Trees {
   private lazy val noColorPrinter = PrettyPrinter()(Formatter.SimpleFormatter)
   private lazy val colorPrinter = PrettyPrinter()(Formatter.PrettyFormatter)
 
-  trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
+  trait Tree extends
+    Positioned with
+    CanHaveError with
+    Product with
+    TraversableLike[Tree, List[Tree]] {
 
     override protected[this] def newBuilder: mutable.Builder[Tree, List[Tree]] = new mutable.ListBuffer
     override def seq: TraversableOnce[Tree] = this
@@ -110,7 +114,7 @@ object Trees {
 
     val name: String = address.mkString("::")
     val writtenName: String = name
-    val shortName: String = address.last
+    val shortName: String = address.lastOption.getOrElse("")
   }
 
   case object RegularImport {
@@ -127,10 +131,11 @@ object Trees {
 
   /*------------------------ Class Declaration Trees ------------------------*/
 
-  case class Annotation(id: ClassID, values: List[KeyValuePair]) extends Tree with Symbolic[AnnotationSymbol]
+  case class Annotation(id: ClassID, values: List[KeyValuePair] = Nil) extends Tree with Symbolic[AnnotationSymbol]
 
   object ClassDeclTree {
-    def unapply(c: ClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods, c.annotations)
+    def unapply(c: ClassDeclTree): Option[(ClassID, List[ClassID], List[VarDecl], List[MethodDeclTree], List[Annotation])] =
+      Some(c.id, c.parents, c.fields, c.methods, c.annotations)
   }
 
   trait Annotatable {
