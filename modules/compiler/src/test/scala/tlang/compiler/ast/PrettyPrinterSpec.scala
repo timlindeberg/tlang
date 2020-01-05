@@ -30,7 +30,7 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
           fail(s"Could not parse file $TestFile:" + NL + errors.pretty)
       }
 
-      val printedCU = prettyPrinter(CU).print
+      val printedCU = prettyPrinter(CU)
 
       val reparsedCU = try {
         parser(StringSource(printedCU, "ParserPositions") :: Nil).head
