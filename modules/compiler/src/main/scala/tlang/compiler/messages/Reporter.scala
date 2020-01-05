@@ -23,11 +23,7 @@ case class DefaultReporter(override val messages: CompilerMessages = CompilerMes
 
   override def report(message: CompilerMessage): Unit = {
     info"Reporting compiler message: $message"
-
     messages += message
-
-    if (message.messageType == MessageType.Fatal)
-      throwException()
   }
 
   override def clear(): Unit = messages.clear()
@@ -36,15 +32,15 @@ case class DefaultReporter(override val messages: CompilerMessages = CompilerMes
   override def terminateIfErrors(): Unit = {
     if (hasErrors) {
       info"Terminating compilation since there were ${ messages(MessageType.Error).length } errors"
-      throwException()
+      throwCompilationException()
     }
   }
 
   override def hasErrors: Boolean = messages(MessageType.Error).nonEmpty
   override def hasWarnings: Boolean = messages(MessageType.Warning).nonEmpty
 
-  private def throwException(): Nothing = {
-    val e = new CompilationException(messages.clone())
+  private def throwCompilationException(): Nothing = {
+    val e = throw new CompilationException(messages.clone())
     clear()
     throw e
   }
@@ -56,7 +52,6 @@ case class VoidReporter() extends Reporter {
   private var _hasWarnings = false
 
   override def report(message: CompilerMessage): Unit = message match {
-    case _: FatalMessage   => throw new CompilationException(null: CompilerMessages)
     case _: WarningMessage => _hasWarnings = true
     case _                 => _hasErrors = true
   }

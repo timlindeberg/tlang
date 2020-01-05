@@ -25,10 +25,7 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     messageInfo = getMessageInfo(createMessage(messageType = MessageType.Error), useColor = true)
     messageInfo.color shouldBe (Bold + Red)
 
-    messageInfo = getMessageInfo(createMessage(messageType = MessageType.Fatal), useColor = true)
-    messageInfo.color shouldBe (Bold + Red)
-
-    messageInfo = getMessageInfo(createMessage(messageType = MessageType.Fatal), useColor = false)
+    messageInfo = getMessageInfo(createMessage(messageType = MessageType.Error), useColor = false)
     messageInfo.color shouldBe NoColor
   }
 
@@ -39,9 +36,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
 
     messageInfo = getMessageInfo(createMessage(messageType = MessageType.Error, errorLetters = "DEF", codeNum = 1), useColor = true)
     messageInfo.prefix should matchWithAnsi("\u001b[1;31mError DEF2001\u001b[0m")
-
-    messageInfo = getMessageInfo(createMessage(messageType = MessageType.Fatal, errorLetters = "GHI", codeNum = 23), useColor = true)
-    messageInfo.prefix should matchWithAnsi("\u001b[1;31mFatal GHI3023\u001b[0m")
 
     messageInfo = getMessageInfo(createMessage(messageType = MessageType.Warning, errorLetters = "A", codeNum = 5), useColor = false)
     messageInfo.prefix should matchWithAnsi("Warning A1005")

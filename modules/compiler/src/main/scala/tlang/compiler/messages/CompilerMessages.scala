@@ -38,9 +38,6 @@ case class CompilerMessages(
       if (warningIsError)
         return this += message.copy(messageType = MessageType.Error)
     }
-    // The CompilerMessages class treats fatal as error
-    if (messageType == MessageType.Fatal)
-      messageType = MessageType.Error
 
     if (maxErrors >= 0 && messages(messageType).size >= maxErrors) {
       _hitMax += messageType

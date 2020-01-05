@@ -29,18 +29,6 @@ class CompilerMessageSpec extends UnitSpec with MessageTesting {
     warnings should have size 3
   }
 
-  it should "treat fatal messages as errors" in {
-    val compilerMessages = createCompilerMessages()
-    compilerMessages += createMessage(messageType = MessageType.Error, errorLetters = "A")
-    compilerMessages += createMessage(messageType = MessageType.Error, errorLetters = "B")
-
-    compilerMessages += createMessage(messageType = MessageType.Fatal, errorLetters = "C")
-    compilerMessages += createMessage(messageType = MessageType.Fatal, errorLetters = "D")
-
-    val errors = compilerMessages(MessageType.Error)
-    errors should have size 4
-  }
-
   it should "suppress warnings" in {
     val compilerMessages = createCompilerMessages(suppressWarnings = true)
 

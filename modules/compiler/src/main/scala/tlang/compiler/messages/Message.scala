@@ -67,9 +67,6 @@ abstract class WarningMessage(override val errorLetters: String, override val co
 abstract class ErrorMessage(override val errorLetters: String, override val codeNum: Int, override val pos: Positioned)
   extends CompilerMessage(MessageType.Error, errorLetters, MessageType.Error.typeCode, codeNum, pos) with Product
 
-abstract class FatalMessage(override val errorLetters: String, override val codeNum: Int, override val pos: Positioned)
-  extends CompilerMessage(MessageType.Fatal, errorLetters, MessageType.Fatal.typeCode, codeNum, pos) with Product
-
 abstract class ExtraMessage(override val pos: Positioned)
   extends CompilerMessage(MessageType.Note, "", MessageType.Note.typeCode, -1, pos) with Product
 
@@ -80,6 +77,5 @@ sealed abstract class MessageType(val typeCode: String, private val _color: Colo
 object MessageType {
   case object Warning extends MessageType("1", Colors.Yellow)
   case object Error extends MessageType("2", Colors.Red)
-  case object Fatal extends MessageType("3", Colors.Red)
   case object Note extends MessageType("", Colors.Blue)
 }

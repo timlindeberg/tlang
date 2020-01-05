@@ -93,7 +93,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting with SnapshotT
         pos = aPos
       ),
       createMessage(
-        messageType = MessageType.Fatal,
+        messageType = MessageType.Error,
         errorLetters = "DEF",
         codeNum = 456,
         message = "B",

@@ -13,11 +13,4 @@ trait ErrorHandling {
   def replaceNames(str: String): String = str
 
   def report(warning: WarningMessage): Unit = reporter.report(warning)
-  def report(fatal: FatalMessage): Nothing = {
-    reporter.report(fatal)
-
-    // Reporter will throw an exception but this is here so the type can be Nothing
-    // and also if reporter is mocked
-    throw new CompilationException(fatal)
-  }
 }
